@@ -38,6 +38,7 @@ Usage:
     eva update              Update to latest version
     eva uninstall           Uninstall EVA Agent
     eva acp                 Run as an ACP server for editor integration
+    eva desk                Desk shell wire guide (tray/PTT/Voicebox stub)
     eva sessions browse     Interactive session picker with search
 
     eva claw migrate --dry-run  # Preview migration without changes
@@ -449,6 +450,7 @@ from hermes_cli.subcommands.logs import build_logs_parser
 from hermes_cli.subcommands.prompt_size import build_prompt_size_parser
 from hermes_cli.subcommands.memory import build_memory_parser
 from hermes_cli.subcommands.acp import build_acp_parser
+from hermes_cli.subcommands.desk import build_desk_parser
 from hermes_cli.subcommands.tools import build_tools_parser
 from hermes_cli.subcommands.insights import build_insights_parser
 from hermes_cli.subcommands.skills import build_skills_parser
@@ -12870,7 +12872,7 @@ _BUILTIN_SUBCOMMANDS = frozenset(
         "computer-use",
         "config", "console", "cron", "curator", "dashboard", "serve", "debug", "doctor",
         "dump", "fallback", "gateway", "hooks", "import", "insights",
-        "gui", "desktop", "kanban", "login", "logout", "logs", "lsp", "mcp", "memory", "migrate", "moa",
+        "gui", "desktop", "desk", "kanban", "login", "logout", "logs", "lsp", "mcp", "memory", "migrate", "moa",
         "journey", "memory-graph", "learning",
         "model", "pairing", "pets", "plugins", "portal", "postinstall", "profile",
         "project", "proxy",
@@ -13292,6 +13294,13 @@ def cmd_acp(args):
         print("ACP dependencies not installed.", file=sys.stderr)
         print("Install them with:  pip install -e '.[acp]'", file=sys.stderr)
         sys.exit(1)
+
+
+def cmd_desk(args):
+    """Windows Desk shell wire stub (tray/PTT/Voicebox integration guide)."""
+    from eva_desktop.cli import cmd_desk as _cmd_desk
+
+    raise SystemExit(_cmd_desk(args))
 
 
 def cmd_tools(args):
@@ -15148,6 +15157,12 @@ def main():
     # acp command  (parser built in hermes_cli/subcommands/acp.py)
     # =========================================================================
     build_acp_parser(subparsers, cmd_acp=cmd_acp)
+
+    # =========================================================================
+    # desk command  (Windows Desk shell wire — tray/PTT/Voicebox stub)
+    # Distinct from ``desktop``/``gui`` (Electron app).
+    # =========================================================================
+    build_desk_parser(subparsers, cmd_desk=cmd_desk)
 
     # =========================================================================
     # profile command  (parser built in hermes_cli/subcommands/profile.py)
