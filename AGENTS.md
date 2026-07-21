@@ -1,17 +1,26 @@
-# Hermes Agent - Development Guide
+# EVA Agent - Development Guide
 
-Instructions for AI coding assistants and developers working on the hermes-agent codebase.
+Instructions for AI coding assistants and developers working on the **eva-agent**
+codebase (product brand: **EVA Agent**; CLI: `eva`).
+
+**Canonical repo:** https://github.com/Pasqualotty/eva-agent  
+**Origin:** MIT fork of [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent).  
+This tree **is** the agent engine — do not treat Hermes as an external dependency.  
+Internal module/path names may still use `hermes_*` / `.hermes` (historical layout);
+product home on Windows targets `%LOCALAPPDATA%\eva`. Preserve LICENSE/NOTICE credit
+to Nous Research.
 
 **Never give up on the right solution.**
 
-## What Hermes Is
+## What EVA Is
 
-Hermes is a personal AI agent that runs the same agent core across a CLI, a
+EVA is a personal AI agent that runs the same agent core across a CLI, a
 messaging gateway (Telegram, Discord, Slack, and ~20 other platforms), a TUI,
 and an Electron desktop app. It learns across sessions (memory + skills),
 delegates to subagents, runs scheduled jobs, and drives a real terminal and
 browser. It is extended primarily through **plugins and skills**, not by
-growing the core.
+growing the core. All of these are **EVA features** (same engine capabilities
+as upstream Hermes, under the EVA brand).
 
 Two properties shape almost every design decision and are the lens for
 reviewing any change:
@@ -40,7 +49,7 @@ This is the project's intent layer. Use it two ways:
    job here is to recognize design intent and *avoid wrongly closing a
    legitimate contribution*, not to make the won't-implement call itself.
 
-Read the balance right: Hermes ships a **lot** — most merges are bug fixes to
+Read the balance right: EVA ships a **lot** — most merges are bug fixes to
 real reported behavior, and the product surface (platforms, channels,
 providers, models, desktop/TUI features) expands aggressively and on purpose.
 The restraint below is aimed squarely at the **core agent + the model tool
@@ -60,8 +69,8 @@ conservative at the waist.
   including large ones (a new messaging channel, a session-cap feature, a
   Windows PTY bridge). Breadth in the product is a goal, not a footprint
   concern — as long as it integrates with the existing setup/config UX
-  (`hermes tools`, `hermes setup`, auto-install) rather than bolting on a raw
-  env var.
+  (`eva tools` / `hermes tools` during transition, `eva setup`, auto-install)
+  rather than bolting on a raw env var.
 - **Refactor god-files into clean modules.** Extracting a multi-thousand-line
   cluster out of `cli.py` / `run_agent.py` / `gateway/run.py` into a focused
   mixin or module is wanted work, even when the diff is huge and mechanical

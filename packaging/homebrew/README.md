@@ -1,14 +1,22 @@
-Homebrew packaging notes for Hermes Agent.
+# Homebrew packaging — EVA Agent
 
-Use `packaging/homebrew/hermes-agent.rb` as a tap or `homebrew-core` starting point.
+MIT-licensed fork of [Nous Research Hermes Agent](https://github.com/NousResearch/hermes-agent).
+Copyright (c) 2025 Nous Research is preserved in the root `LICENSE`.
 
-Key choices:
-- Stable builds should target the semver-named sdist asset attached to each GitHub release, not the CalVer tag tarball.
-- `faster-whisper` now lives in the `voice` extra, which keeps wheel-only transitive dependencies out of the base Homebrew formula.
-- The wrapper exports `HERMES_BUNDLED_SKILLS`, `HERMES_OPTIONAL_SKILLS`, and `HERMES_MANAGED=homebrew` so packaged installs keep runtime assets and defer upgrades to Homebrew.
+| Formula | Purpose |
+|---------|---------|
+| `eva-agent.rb` | **EVA** brand formula (this fork) |
+| `hermes-agent.rb` | Upstream-shaped reference formula |
 
-Typical update flow:
-1. Bump the formula `url`, `version`, and `sha256`.
-2. Refresh Python resources with `brew update-python-resources --print-only hermes-agent`.
-3. Keep `ignore_packages: %w[certifi cryptography pydantic]`.
-4. Verify `brew audit --new --strict hermes-agent` and `brew test hermes-agent`.
+## EVA formula notes
+
+- Source should eventually point at a **semver sdist** asset on GitHub Releases for `Pasqualotty/eva-agent`, not a floating `main` tarball.
+- Wrapper exports `HERMES_BUNDLED_SKILLS`, `HERMES_OPTIONAL_SKILLS`, and `HERMES_MANAGED=homebrew` so the engine keeps finding bundled assets (env names remain `HERMES_*` for compatibility with the core).
+- Console scripts: prefer `eva`; keep `hermes` / `hermes-agent` / `hermes-acp` when the package still ships them.
+
+## Update flow
+
+1. Bump formula `url`, `version`, and `sha256` for a real release asset.
+2. `brew update-python-resources --print-only eva-agent`
+3. Keep `ignore_packages: %w[certifi cryptography pydantic]`
+4. `brew audit --new --strict eva-agent` and `brew test eva-agent`

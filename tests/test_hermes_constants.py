@@ -38,6 +38,7 @@ class TestGetDefaultHermesRoot:
         monkeypatch.delenv("EVA_HOME", raising=False)
         monkeypatch.delenv("HERMES_HOME", raising=False)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        # Force POSIX layout so this case is stable on Windows hosts.
         monkeypatch.setattr(hermes_constants.sys, "platform", "linux")
 
         assert get_default_hermes_root() == tmp_path / ".eva"
@@ -126,7 +127,7 @@ class TestGetHermesHome:
     """Tests for get_hermes_home() platform-aware fallback."""
 
     def test_windows_fallback_uses_localappdata(self, tmp_path, monkeypatch):
-        """When EVA_HOME is unset on Windows, use %LOCALAPPDATA%\\eva."""
+        """When EVA_HOME/HERMES_HOME are unset on Windows, use %LOCALAPPDATA%\\eva."""
         local_appdata = tmp_path / "LocalAppData"
         monkeypatch.delenv("EVA_HOME", raising=False)
         monkeypatch.delenv("HERMES_HOME", raising=False)
@@ -164,6 +165,7 @@ class TestGetProcessHermesHome:
         monkeypatch.delenv("EVA_HOME", raising=False)
         monkeypatch.delenv("HERMES_HOME", raising=False)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        # Force POSIX layout so this case is stable on Windows hosts.
         monkeypatch.setattr(hermes_constants.sys, "platform", "linux")
         assert get_process_hermes_home() == tmp_path / ".eva"
 

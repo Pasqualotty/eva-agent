@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Hermes Agent CLI - Interactive Terminal Interface
+EVA Agent CLI - Interactive Terminal Interface
 
-A beautiful command-line interface for the Hermes Agent, inspired by Claude Code.
+A beautiful command-line interface for the EVA Agent, inspired by Claude Code.
 Features ASCII art branding, interactive REPL, toolset selection, and rich formatting.
 
 Usage:
@@ -477,6 +477,17 @@ def load_cli_config() -> Dict[str, Any]:
             "reasoning_effort": "",
             "service_tier": "",
             "personalities": {
+                # Default voice for this fork — also the seeded SOUL.md identity.
+                "eva": (
+                    "You are EVA — a personal AI tech lead and collaborator. You are warm, gentle, "
+                    "professional, and lightly witty; never a generic \"AI assistant.\" When the user "
+                    "writes in Portuguese, reply in Portuguese; otherwise match their language. Lead "
+                    "with the answer or decision, then useful detail. You help with software, "
+                    "automation, planning, and shipping real work: clear, targeted, and efficient. "
+                    "Admit uncertainty when appropriate. Respect Hermes security controls (tool "
+                    "approvals, dangerous-command gates, secret handling) and never bypass them. "
+                    "Prefer being genuinely useful over being verbose unless directed otherwise."
+                ),
                 "helpful": "You are a helpful, friendly AI assistant.",
                 "concise": "You are a concise assistant. Keep responses brief and to the point.",
                 "technical": "You are a technical expert. Provide detailed, accurate technical information.",
@@ -3563,7 +3574,7 @@ def _build_compact_banner() -> str:
         line1 = "⚕ NOUS HERMES - AI Agent Framework"
         tiny_line = "⚕ NOUS HERMES"
     else:
-        agent_name = _skin.get_branding("agent_name", "Hermes Agent") if _skin else "Hermes Agent"
+        agent_name = _skin.get_branding("agent_name", "EVA Agent") if _skin else "EVA Agent"
         line1 = f"{agent_name} - AI Agent Framework"
         tiny_line = agent_name
 
@@ -3571,7 +3582,7 @@ def _build_compact_banner() -> str:
         from hermes_cli import __release_date__ as _release_date
         from hermes_cli import __version__ as _version
 
-        version_line = f"Hermes Agent v{_version} ({_release_date})"
+        version_line = f"EVA Agent v{_version} ({_release_date})"
     else:
         version_line = format_banner_version_label()
 
@@ -3748,7 +3759,7 @@ def save_config_value(key_path: str, value: any) -> bool:
 
 class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
     """
-    Interactive CLI for the Hermes Agent.
+    Interactive CLI for the EVA Agent.
     
     Provides a REPL interface with rich formatting, command history,
     and tool execution capabilities.
@@ -5873,10 +5884,10 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             try:
                 from hermes_cli.skin_engine import get_active_skin
                 _skin = get_active_skin()
-                label = _skin.get_branding("response_label", "⚕ Hermes")
+                label = _skin.get_branding("response_label", "⚕ EVA")
                 _text_hex = _skin.get_color("banner_text", "#FFF8DC")
             except Exception:
-                label = "⚕ Hermes"
+                label = "⚕ EVA"
                 _text_hex = "#FFF8DC"
             # Build a true-color ANSI escape for the response text color
             # so streamed content matches the Rich Panel appearance.
@@ -6319,7 +6330,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             self._console_print()
             self._console_print(
                 "[bold yellow]⚠  Nous Research Hermes 3 & 4 models are NOT agentic and are not "
-                "designed for use with Hermes Agent.[/]"
+                "designed for use with EVA Agent.[/]"
             )
             self._console_print(
                 "[dim]   They lack tool-calling capabilities required for agent workflows. "
@@ -11991,7 +12002,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                     if not _streaming_box_opened:
                         _streaming_box_opened = True
                         w = self._scrollback_box_width(getattr(self.console, "width", 80))
-                        label = " ⚕ Hermes "
+                        label = " ⚕ EVA "
                         if self.show_timestamps:
                             label = f"{label}{datetime.now().strftime(getattr(self, 'timestamp_format', '%H:%M'))} "
                         fill = w - 2 - HermesCLI._status_bar_display_width(label)
@@ -12410,11 +12421,11 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 try:
                     from hermes_cli.skin_engine import get_active_skin
                     _skin = get_active_skin()
-                    label = _skin.get_branding("response_label", "⚕ Hermes")
+                    label = _skin.get_branding("response_label", "⚕ EVA")
                     _resp_color = _maybe_remap_for_light_mode(_skin.get_color("response_border", "#CD7F32"))
                     _resp_text = _maybe_remap_for_light_mode(_skin.get_color("banner_text", "#FFF8DC"))
                 except Exception:
-                    label = "⚕ Hermes"
+                    label = "⚕ EVA"
                     _resp_color = _maybe_remap_for_light_mode("#CD7F32")
                     _resp_text = _maybe_remap_for_light_mode("#FFF8DC")
 
@@ -12968,10 +12979,10 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         try:
             from hermes_cli.skin_engine import get_active_skin
             _welcome_skin = get_active_skin()
-            _welcome_text = _welcome_skin.get_branding("welcome", "Welcome to Hermes Agent! Type your message or /help for commands.")
+            _welcome_text = _welcome_skin.get_branding("welcome", "Welcome to EVA Agent! Type your message or /help for commands.")
             _welcome_color = _welcome_skin.get_color("banner_text", "#FFF8DC")
         except Exception:
-            _welcome_text = "Welcome to Hermes Agent! Type your message or /help for commands."
+            _welcome_text = "Welcome to EVA Agent! Type your message or /help for commands."
             _welcome_color = "#FFF8DC"
         self._console_print(f"[{_welcome_color}]{_welcome_text}[/]")
 
@@ -13815,7 +13826,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             import signal as _sig
             from prompt_toolkit.application import run_in_terminal
             from hermes_cli.skin_engine import get_active_skin
-            agent_name = get_active_skin().get_branding("agent_name", "Hermes Agent")
+            agent_name = get_active_skin().get_branding("agent_name", "EVA Agent")
             msg = f"\n{agent_name} has been suspended. Run `fg` to bring {agent_name} back."
             def _suspend():
                 os.write(1, msg.encode())
@@ -15593,7 +15604,7 @@ def main(
     ignore_rules: bool = False,
 ):
     """
-    Hermes Agent CLI - Interactive AI Assistant
+    EVA Agent CLI - Interactive AI Assistant
     
     Args:
         query: Single query to execute (then exit). Alias: -q

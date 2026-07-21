@@ -305,11 +305,10 @@ all = [
 ]
 
 [project.scripts]
-# Canonical EVA entry points
+# Canonical EVA entry points (primary). Keep hermes* as one-release aliases.
 eva = "hermes_cli.main:main"
 eva-agent = "run_agent:main"
 eva-acp = "acp_adapter.entry:main"
-# One-release Hermes aliases (same targets)
 hermes = "hermes_cli.main:main"
 hermes-agent = "run_agent:main"
 hermes-acp = "acp_adapter.entry:main"

@@ -3,15 +3,16 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
-  title: 'Hermes Agent',
-  tagline: 'The self-improving AI agent',
+  title: 'EVA Agent',
+  tagline: 'The complete self-improving AI agent — skills, memory, gateway, cron, tools',
   favicon: 'img/favicon.ico',
 
-  url: 'https://hermes-agent.nousresearch.com',
+  // Docs site ships with the EVA fork; host URL may be re-pointed when publishing.
+  url: 'https://github.com/Pasqualotty/eva-agent',
   baseUrl: '/docs/',
 
-  organizationName: 'NousResearch',
-  projectName: 'hermes-agent',
+  organizationName: 'Pasqualotty',
+  projectName: 'eva-agent',
 
   onBrokenLinks: 'warn',
 
@@ -104,7 +105,7 @@ const config: Config = {
         docs: {
           routeBasePath: '/',  // Docs at the root of /docs/
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/NousResearch/hermes-agent/edit/main/website/',
+          editUrl: 'https://github.com/Pasqualotty/eva-agent/edit/main/website/',
         },
         blog: false,
         theme: {
@@ -127,9 +128,9 @@ const config: Config = {
       },
     },
     navbar: {
-      title: 'Hermes Agent',
+      title: 'EVA Agent',
       logo: {
-        alt: 'Hermes Agent',
+        alt: 'EVA Agent',
         src: 'img/logo.png',
       },
       items: [
@@ -145,8 +146,8 @@ const config: Config = {
           position: 'left',
         },
         {
-          href: 'https://hermes-agent.nousresearch.com/',
-          label: 'Download',
+          href: 'https://github.com/Pasqualotty/eva-agent',
+          label: 'GitHub',
           position: 'left',
         },
         {
@@ -154,18 +155,13 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://hermes-agent.nousresearch.com',
-          label: 'Home',
+          href: 'https://github.com/Pasqualotty/eva-agent',
+          label: 'Source',
           position: 'right',
         },
         {
           href: 'https://github.com/NousResearch/hermes-agent',
-          label: 'GitHub',
-          position: 'right',
-        },
-        {
-          href: 'https://discord.gg/NousResearch',
-          label: 'Discord',
+          label: 'Upstream',
           position: 'right',
         },
       ],
@@ -185,21 +181,21 @@ const config: Config = {
         {
           title: 'Community',
           items: [
-            { label: 'Discord', href: 'https://discord.gg/NousResearch' },
-            { label: 'GitHub Issues', href: 'https://github.com/NousResearch/hermes-agent/issues' },
+            { label: 'EVA Issues', href: 'https://github.com/Pasqualotty/eva-agent/issues' },
+            { label: 'Upstream Hermes', href: 'https://github.com/NousResearch/hermes-agent' },
             { label: 'Skills Hub', href: 'https://agentskills.io' },
           ],
         },
         {
           title: 'More',
           items: [
-            { label: 'Desktop Download', href: 'https://hermes-agent.nousresearch.com/' },
-            { label: 'GitHub', href: 'https://github.com/NousResearch/hermes-agent' },
+            { label: 'EVA on GitHub', href: 'https://github.com/Pasqualotty/eva-agent' },
+            { label: 'Upstream Hermes', href: 'https://github.com/NousResearch/hermes-agent' },
             { label: 'Nous Research', href: 'https://nousresearch.com' },
           ],
         },
       ],
-      copyright: `Built by <a href="https://nousresearch.com">Nous Research</a> · MIT License · ${new Date().getFullYear()}`,
+      copyright: `EVA Agent · fork of Hermes by <a href="https://nousresearch.com">Nous Research</a> · MIT License · ${new Date().getFullYear()}`,
     },
     prism: {
       theme: prismThemes.github,

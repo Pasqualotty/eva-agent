@@ -1,5 +1,5 @@
 """
-Top-level argparse construction for the hermes CLI.
+Top-level argparse construction for the EVA Agent CLI.
 
 Lives in its own module so other modules (e.g. ``relaunch.py``) can
 introspect the parser to discover which flags exist without running the
@@ -8,6 +8,8 @@ introspect the parser to discover which flags exist without running the
 Only the top-level parser and the ``chat`` subparser live here. Every other
 subparser (model, gateway, sessions, …) is built inline in ``main.py``
 because its dispatch is tightly coupled to module-level ``cmd_*`` functions.
+
+``hermes`` remains a compatibility alias for ``eva``.
 """
 
 import argparse
@@ -39,46 +41,49 @@ def _inherited_flag(parser, *args, **kwargs):
 
 _EPILOGUE = """
 Examples:
-    hermes                        Start interactive chat
-    hermes chat -q "Hello"        Single query mode
-    hermes --tui                  Launch the modern TUI (or set display.interface: tui)
-    hermes --cli                  Force the classic REPL (overrides display.interface: tui)
-    hermes -c                     Resume the most recent session
-    hermes -c "my project"        Resume a session by name (latest in lineage)
-    hermes --resume <session_id>  Resume a specific session by ID
-    hermes setup                  Run setup wizard
-    hermes logout                 Clear stored authentication
-    hermes auth add <provider>    Add a pooled credential
-    hermes auth list              List pooled credentials
-    hermes auth remove <p> <t>    Remove pooled credential by index, id, or label
-    hermes auth reset <provider>  Clear exhaustion status for a provider
-    hermes model                  Select default model
-    hermes fallback [list]        Show fallback provider chain
-    hermes fallback add           Add a fallback provider (same picker as `hermes model`)
-    hermes fallback remove        Remove a fallback provider from the chain
-    hermes config                 View configuration
-    hermes config edit            Edit config in $EDITOR
-    hermes config set model gpt-4 Set a config value
-    hermes gateway                Run messaging gateway
-    hermes -s hermes-agent-dev,github-auth
-    hermes -w                     Start in isolated git worktree
-    hermes gateway install        Install gateway background service
-    hermes sessions list          List past sessions
-    hermes sessions browse        Interactive session picker
-    hermes sessions rename ID T   Rename/title a session
-    hermes logs                   View agent.log (last 50 lines)
-    hermes logs -f                Follow agent.log in real time
-    hermes logs errors            View errors.log
-    hermes logs --since 1h        Lines from the last hour
-    hermes debug share             Upload debug report for support
-    hermes console                Open the safe Hermes command console
-    hermes update                 Update to latest version
-    hermes dashboard              Start web UI dashboard (port 9119)
-    hermes dashboard --stop       Stop running dashboard processes
-    hermes dashboard --status     List running dashboard processes
+    eva                        Start interactive chat
+    eva chat -q "Hello"        Single query mode
+    eva --tui                  Launch the modern TUI (or set display.interface: tui)
+    eva --cli                  Force the classic REPL (overrides display.interface: tui)
+    eva -c                     Resume the most recent session
+    eva -c "my project"        Resume a session by name (latest in lineage)
+    eva --resume <session_id>  Resume a specific session by ID
+    eva setup                  Run setup wizard
+    eva logout                 Clear stored authentication
+    eva auth add <provider>    Add a pooled credential
+    eva auth list              List pooled credentials
+    eva auth remove <p> <t>    Remove pooled credential by index, id, or label
+    eva auth reset <provider>  Clear exhaustion status for a provider
+    eva model                  Select default model
+    eva fallback [list]        Show fallback provider chain
+    eva fallback add           Add a fallback provider (same picker as `eva model`)
+    eva fallback remove        Remove a fallback provider from the chain
+    eva config                 View configuration
+    eva config edit            Edit config in $EDITOR
+    eva config set model gpt-4 Set a config value
+    eva gateway                Run messaging gateway
+    eva -s hermes-agent-dev,github-auth
+    eva -w                     Start in isolated git worktree
+    eva gateway install        Install gateway background service
+    eva sessions list          List past sessions
+    eva sessions browse        Interactive session picker
+    eva sessions rename ID T   Rename/title a session
+    eva logs                   View agent.log (last 50 lines)
+    eva logs -f                Follow agent.log in real time
+    eva logs errors            View errors.log
+    eva logs --since 1h        Lines from the last hour
+    eva debug share             Upload debug report for support
+    eva console                Open the safe EVA command console
+    eva update                 Update to latest version
+    eva dashboard              Start web UI dashboard (port 9119)
+    eva dashboard --stop       Stop running dashboard processes
+    eva dashboard --status     List running dashboard processes
+
+Compatibility:
+    hermes                     Alias for eva (same CLI)
 
 For more help on a command:
-    hermes <command> --help
+    eva <command> --help
 """
 
 
@@ -90,8 +95,8 @@ def build_top_level_parser():
     other subparsers via ``subparsers.add_parser(...)``.
     """
     parser = argparse.ArgumentParser(
-        prog="hermes",
-        description="Hermes Agent - AI assistant with tool-calling capabilities",
+        prog="eva",
+        description="EVA Agent - AI assistant with tool-calling capabilities",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=_EPILOGUE,
     )
@@ -269,7 +274,7 @@ def build_top_level_parser():
     chat_parser = subparsers.add_parser(
         "chat",
         help="Interactive chat with the agent",
-        description="Start an interactive chat session with Hermes Agent",
+        description="Start an interactive chat session with EVA Agent",
     )
     chat_parser.add_argument(
         "-q", "--query", help="Single query (non-interactive mode)"

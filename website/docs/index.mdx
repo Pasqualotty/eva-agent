@@ -1,17 +1,26 @@
 ---
 slug: /
 sidebar_position: 0
-title: "Hermes Agent Documentation"
-description: "The self-improving AI agent built by Nous Research. A built-in learning loop that creates skills from experience, improves them during use, and remembers across sessions."
+title: "EVA Agent Documentation"
+description: "EVA Agent — the complete self-improving AI agent (skills, memory, gateway, cron, tools). MIT fork of NousResearch/hermes-agent."
 hide_table_of_contents: true
 displayed_sidebar: docs
 ---
 
 import Link from "@docusaurus/Link";
 
-# Hermes Agent
+# EVA Agent
 
-The self-improving AI agent built by [Nous Research](https://nousresearch.com). The only agent with a built-in learning loop — it creates skills from experience, improves them during use, nudges itself to persist knowledge, and builds a deepening model of who you are across sessions.
+**EVA Agent** is a complete personal AI agent — **skills, memory, messaging gateway, cron, tools, TUI, and desktop** — under its own brand. This documentation ships with the [Pasqualotty/eva-agent](https://github.com/Pasqualotty/eva-agent) repository.
+
+This tree **is the engine** (MIT fork of [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)). Hermes is not installed as an external dependency. All engine features below are **EVA features**.
+
+| | |
+| --- | --- |
+| **CLI** | `eva` |
+| **Windows home** | `%LOCALAPPDATA%\eva` |
+| **Canonical repo** | [github.com/Pasqualotty/eva-agent](https://github.com/Pasqualotty/eva-agent) |
+| **License** | MIT (Nous Research copyright preserved in LICENSE) |
 
 <div
   style={{
@@ -36,7 +45,7 @@ The self-improving AI agent built by [Nous Research](https://nousresearch.com). 
     Get Started →
   </Link>
   <a
-    href="https://hermes-agent.nousresearch.com/"
+    href="https://github.com/Pasqualotty/eva-agent"
     style={{
       display: "inline-block",
       padding: "0.6rem 1.2rem",
@@ -45,7 +54,7 @@ The self-improving AI agent built by [Nous Research](https://nousresearch.com). 
       textDecoration: "none",
     }}
   >
-    Download Desktop
+    View on GitHub
   </a>
   <a
     href="https://github.com/NousResearch/hermes-agent"
@@ -57,49 +66,48 @@ The self-improving AI agent built by [Nous Research](https://nousresearch.com). 
       textDecoration: "none",
     }}
   >
-    View on GitHub
+    Upstream Hermes
   </a>
 </div>
 
 ## Install
 
-### Windows or macOS
-
-To easily install the command-line and desktop applications, [download the Hermes Desktop installer](https://hermes-agent.nousresearch.com/) from our website and run it.
-
-### Without Hermes Desktop:
-
-For a command-line only install without Hermes Desktop, run:
-
-#### Linux / macOS / WSL2 / Android (Termux)
+### From source (canonical EVA repo)
 
 ```bash
-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+git clone https://github.com/Pasqualotty/eva-agent.git
+cd eva-agent
+uv venv --python 3.11
+source .venv/bin/activate   # Windows: .\.venv\Scripts\Activate.ps1
+uv pip install -e ".[all]"
+eva
 ```
 
-#### Windows (native)
+### Platform notes
 
-Run in powershell:
+- **Windows (native):** product home is `%LOCALAPPDATA%\eva`. CLI, gateway, TUI, and tools are intended to work without WSL.
+- **Linux / macOS / WSL2:** clone + uv install as above; use `eva` as the product CLI.
+- **Termux:** prefer the curated `.[termux]` extra when full extras pull incompatible voice deps.
 
-```powershell
-iex (irm https://hermes-agent.nousresearch.com/install.ps1)
-```
-
-See the full **[Installation Guide](/getting-started/installation)** for what the installer does, the per-user vs root layout, and Windows-specific notes. For the complete platform support matrix, see **[Platform Support](/getting-started/platform-support)**.
+See the full **[Installation Guide](/getting-started/installation)** for managed installers, layouts, and platform support. Some pages may still say “Hermes” in procedural detail — treat those as **engine docs**; the product brand is **EVA**.
 
 :::tip Fastest path to a working agent
-After installing, run `hermes setup --portal` — one OAuth covers a model plus all four Tool Gateway tools (web search, image generation, TTS, browser). See [Nous Portal](/integrations/nous-portal).
+After installing, run `eva setup` (or `eva setup --portal` if using Nous Portal OAuth for model + Tool Gateway). See [Nous Portal](/integrations/nous-portal).
 :::
 
-## What is Hermes Agent?
+## What is EVA Agent?
 
 It's not a coding copilot tethered to an IDE or a chatbot wrapper around a single API. It's an **autonomous agent** that gets more capable the longer it runs. It lives wherever you put it — a $5 VPS, a GPU cluster, or serverless infrastructure (Daytona, Modal) that costs nearly nothing when idle. Talk to it from Telegram while it works on a cloud VM you never SSH into yourself. It's not tied to your laptop.
+
+## Origin & credits
+
+EVA Agent is a maintained **fork** of Hermes Agent by [Nous Research](https://nousresearch.com), released under the MIT License. Preserve LICENSE and attribution. Internal module names may still use `hermes_*` paths — that is historical package layout inside this engine, not a second product.
 
 ## Quick Links
 
 |                                                                         |                                                                       |
 | ----------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| 🚀 **[Installation](/getting-started/installation)**                    | Install in 60 seconds on Linux, macOS, WSL2, native Windows, or Android        |
+| 🚀 **[Installation](/getting-started/installation)**                    | Install on Linux, macOS, WSL2, native Windows, or Android             |
 | 📖 **[Quickstart Tutorial](/getting-started/quickstart)**               | Your first conversation and key features to try                       |
 | 🗺️ **[Learning Path](/getting-started/learning-path)**                  | Find the right docs for your experience level                         |
 | ⚙️ **[Configuration](/user-guide/configuration)**                       | Config file, providers, models, and options                           |
@@ -107,35 +115,34 @@ It's not a coding copilot tethered to an IDE or a chatbot wrapper around a singl
 | 🔧 **[Tools & Toolsets](/user-guide/features/tools)**                   | 60+ built-in tools and how to configure them                          |
 | 🧠 **[Memory System](/user-guide/features/memory)**                     | Persistent memory that grows across sessions                          |
 | 📚 **[Skills System](/user-guide/features/skills)**                     | Procedural memory the agent creates and reuses                        |
-| 🔌 **[MCP Integration](/user-guide/features/mcp)**                      | Connect to MCP servers, filter their tools, and extend Hermes safely  |
-| 🧭 **[Use MCP with Hermes](/guides/use-mcp-with-hermes)**               | Practical MCP setup patterns, examples, and tutorials                 |
-| 🎙️ **[Voice Mode](/user-guide/features/voice-mode)**                    | Real-time voice interaction in CLI, Telegram, Discord, and Discord VC |
-| 🗣️ **[Use Voice Mode with Hermes](/guides/use-voice-mode-with-hermes)** | Hands-on setup and usage patterns for Hermes voice workflows          |
-| 🎭 **[Personality & SOUL.md](/user-guide/features/personality)**        | Define Hermes' default voice with a global SOUL.md                    |
+| 🔌 **[MCP Integration](/user-guide/features/mcp)**                      | Connect to MCP servers, filter their tools, and extend safely         |
+| 🧭 **[Use MCP with Hermes](/guides/use-mcp-with-hermes)**               | Practical MCP setup patterns (engine guide)                           |
+| 🎙️ **[Voice Mode](/user-guide/features/voice-mode)**                    | Real-time voice interaction in CLI and messaging                      |
+| 🎭 **[Personality & SOUL.md](/user-guide/features/personality)**        | Define the default voice with a global SOUL.md                        |
 | 📄 **[Context Files](/user-guide/features/context-files)**              | Project context files that shape every conversation                   |
 | 🔒 **[Security](/user-guide/security)**                                 | Command approval, authorization, container isolation                  |
-| 💡 **[Tips & Best Practices](/guides/tips)**                            | Quick wins to get the most out of Hermes                              |
+| 💡 **[Tips & Best Practices](/guides/tips)**                            | Quick wins to get the most out of EVA                                 |
 | 🏗️ **[Architecture](/developer-guide/architecture)**                    | How it works under the hood                                           |
 | ❓ **[FAQ & Troubleshooting](/reference/faq)**                          | Common questions and solutions                                        |
 
 ## Key Features
 
 - **A closed learning loop** — Agent-curated memory with periodic nudges, autonomous skill creation, skill self-improvement during use, FTS5 cross-session recall with LLM summarization, and [Honcho](https://github.com/plastic-labs/honcho) dialectic user modeling
-- **Runs anywhere, not just your laptop** — 6 terminal backends: local, Docker, SSH, Daytona, Singularity, Modal. Daytona and Modal offer serverless persistence — your environment hibernates when idle, costing nearly nothing
-- **Lives where you do** — CLI, Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Mattermost, Email, SMS, DingTalk, Feishu, WeCom, Weixin, QQ Bot, Yuanbao, BlueBubbles, Home Assistant, Microsoft Teams, Google Chat, and more — 20+ platforms from one gateway
-- **Built by model trainers** — Created by [Nous Research](https://nousresearch.com), the lab behind Hermes, Nomos, and Psyche. Works with [Nous Portal](https://portal.nousresearch.com), [OpenRouter](https://openrouter.ai), OpenAI, or any endpoint
+- **Runs anywhere, not just your laptop** — 6 terminal backends: local, Docker, SSH, Daytona, Singularity, Modal
+- **Lives where you do** — CLI, Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Mattermost, Email, SMS, and 20+ platforms from one gateway
 - **Scheduled automations** — Built-in cron with delivery to any platform
-- **Delegates & parallelizes** — Spawn isolated subagents for parallel workstreams. Programmatic Tool Calling via `execute_code` collapses multi-step pipelines into single inference calls
-- **Open standard skills** — Compatible with [agentskills.io](https://agentskills.io). Skills are portable, shareable, and community-contributed via the Skills Hub
-- **Full web control** — Search, extract, browse, vision, image generation, TTS — one subscription via [Nous Portal](/integrations/nous-portal) bundles all of them
+- **Delegates & parallelizes** — Spawn isolated subagents for parallel workstreams
+- **Open standard skills** — Compatible with [agentskills.io](https://agentskills.io)
+- **Full web control** — Search, extract, browse, vision, image generation, TTS
 - **MCP support** — Connect to any MCP server for extended tool capabilities
-- **Research-ready** — Batch processing, trajectory export, RL training with Atropos. Built by [Nous Research](https://nousresearch.com) — the lab behind Hermes, Nomos, and Psyche models
+- **Research-ready** — Batch processing, trajectory export, RL-oriented tooling
+- **Plugins at the edges** — Memory providers, model providers, platforms, context engines
 
 ## For LLMs and coding agents
 
 Machine-readable entry points to this documentation:
 
-- **[`/llms.txt`](/llms.txt)** — curated index of every doc page with short descriptions. ~17 KB, safe to load into an LLM context.
-- **[`/llms-full.txt`](/llms-full.txt)** — every doc page concatenated into a single markdown file for one-shot ingestion. ~1.8 MB.
+- **[`/llms.txt`](/llms.txt)** — curated index of every doc page with short descriptions
+- **[`/llms-full.txt`](/llms-full.txt)** — every doc page concatenated for one-shot ingestion
 
-Both files also resolve at `/docs/llms.txt` and `/docs/llms-full.txt`. Generated fresh on every deploy.
+Both files also resolve at `/docs/llms.txt` and `/docs/llms-full.txt` when the site is built with the default base URL.

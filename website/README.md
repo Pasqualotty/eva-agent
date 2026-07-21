@@ -1,6 +1,8 @@
-# Website
+# EVA Agent — Docs website
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+Documentation site for **EVA Agent** ([Pasqualotty/eva-agent](https://github.com/Pasqualotty/eva-agent)), built with [Docusaurus](https://docusaurus.io/).
+
+Product brand: **EVA** · CLI: `eva` · Origin: MIT fork of NousResearch/hermes-agent.
 
 ## Installation
 

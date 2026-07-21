@@ -1,11 +1,12 @@
 # ============================================================================
-# Hermes Agent Installer for Windows
+# EVA Agent Installer for Windows
 # ============================================================================
 # Installation script for Windows (PowerShell).
+# Fork of Hermes Agent (Nous Research) — full Hermes features, EVA brand.
 # Uses uv for fast Python provisioning and package management.
 #
-# Usage:
-#   iex (irm https://hermes-agent.nousresearch.com/install.ps1)
+# Usage (no admin required — user-scoped under %LOCALAPPDATA%\eva):
+#   iex (irm https://raw.githubusercontent.com/Pasqualotty/eva-agent/main/scripts/install.ps1)
 #
 # Or download and run with options:
 #   .\install.ps1 -NoVenv -SkipSetup
@@ -23,8 +24,8 @@ param(
     # exact ref.  Precedence: Commit > Tag > Branch.
     [string]$Commit = "",
     [string]$Tag = "",
-    [string]$HermesHome = $(if ($env:HERMES_HOME) { $env:HERMES_HOME } else { "$env:LOCALAPPDATA\hermes" }),
-    [string]$InstallDir = $(if ($env:HERMES_HOME) { "$env:HERMES_HOME\hermes-agent" } else { "$env:LOCALAPPDATA\hermes\hermes-agent" }),
+    [string]$HermesHome = $(if ($env:HERMES_HOME) { $env:HERMES_HOME } else { "$env:LOCALAPPDATA\eva" }),
+    [string]$InstallDir = $(if ($env:HERMES_HOME) { "$env:HERMES_HOME\eva-agent" } else { "$env:LOCALAPPDATA\eva\eva-agent" }),
 
     # --- Stage protocol (additive; default invocation behaves as before) ----
     # See the "Stage protocol" section near the bottom of the file for the
@@ -136,8 +137,8 @@ foreach ($tmpVar in @('TEMP', 'TMP')) {
 # Configuration
 # ============================================================================
 
-$RepoUrlSsh = "git@github.com:NousResearch/hermes-agent.git"
-$RepoUrlHttps = "https://github.com/NousResearch/hermes-agent.git"
+$RepoUrlSsh = "git@github.com:Pasqualotty/eva-agent.git"
+$RepoUrlHttps = "https://github.com/Pasqualotty/eva-agent.git"
 $PythonVersion = "3.11"
 # Minor versions the installer accepts when the requested $PythonVersion isn't
 # available, in preference order.  uv discovers both uv-managed and system
@@ -207,9 +208,9 @@ function Get-WindowsArch {
 function Write-Banner {
     Write-Host ""
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
-    Write-Host "|             * Hermes Agent Installer                    |" -ForegroundColor Magenta
+    Write-Host "|             * EVA Agent Installer                       |" -ForegroundColor Magenta
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
-    Write-Host "|  An open source AI agent by Nous Research.              |" -ForegroundColor Magenta
+    Write-Host "|  Full Hermes features. Brand EVA. Based on Nous Hermes. |" -ForegroundColor Magenta
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
     Write-Host ""
 }
@@ -810,7 +811,7 @@ function Install-Git {
       1. Existing ``git`` on PATH -- use it as-is (the common fast path).
       2. Download **PortableGit** from the official git-for-windows GitHub
          release (self-extracting 7z.exe) and unpack it to
-         ``%LOCALAPPDATA%\hermes\git`` -- never touches system Git, never
+         ``%LOCALAPPDATA%\eva\git`` -- never touches system Git, never
          requires admin, works even on locked-down machines and machines
          with a broken system Git install.
 
@@ -824,7 +825,7 @@ function Install-Git {
     We deliberately skip winget because it fails badly when the system Git
     install is in a half-installed state (partially registered, or uninstall-
     blocked).  Owning the Hermes copy of Git ourselves is predictable and
-    recoverable: if it ever breaks, ``Remove-Item %LOCALAPPDATA%\hermes\git``
+    recoverable: if it ever breaks, ``Remove-Item %LOCALAPPDATA%\eva\git``
     and re-running this installer fully recovers.
 
     After install we locate ``bash.exe`` and persist the path in
@@ -1663,13 +1664,13 @@ function Install-Repository {
                 # for.  GitHub supports archive URLs for commits, tags, and
                 # branches; we honour Commit > Tag > Branch.
                 if ($Commit) {
-                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/$Commit.zip"
+                    $zipUrl = "https://github.com/Pasqualotty/eva-agent/archive/$Commit.zip"
                     $zipLabel = $Commit
                 } elseif ($Tag) {
-                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/$Tag.zip"
+                    $zipUrl = "https://github.com/Pasqualotty/eva-agent/archive/refs/tags/$Tag.zip"
                     $zipLabel = $Tag
                 } else {
-                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/refs/heads/$Branch.zip"
+                    $zipUrl = "https://github.com/Pasqualotty/eva-agent/archive/refs/heads/$Branch.zip"
                     $zipLabel = $Branch
                 }
                 $zipPath = "$env:TEMP\hermes-agent-$zipLabel.zip"
@@ -2272,7 +2273,7 @@ function Set-PathVariable {
     }
     
     # Set HERMES_HOME so the Python code finds config/data in the right place.
-    # Only needed on Windows where we install to %LOCALAPPDATA%\hermes instead
+    # Only needed on Windows where we install to %LOCALAPPDATA%\eva instead
     # of the Unix default ~/.hermes
     $currentHermesHome = [Environment]::GetEnvironmentVariable("HERMES_HOME", "User")
     if (-not $currentHermesHome -or $currentHermesHome -ne $HermesHome) {
@@ -2283,9 +2284,23 @@ function Set-PathVariable {
     
     # Update current session
     $env:Path = "$hermesBin;$env:Path"
-    
-    Write-Success "hermes command ready"
+
+    # Product CLI is `eva`. Until pyproject ships an eva entry point, create a
+    # user-scoped shim next to hermes.exe so `eva` works on PATH immediately.
+    $evaExe = Join-Path $hermesBin "eva.exe"
+    $hermesExe = Join-Path $hermesBin "hermes.exe"
+    if (-not (Test-Path $evaExe) -and (Test-Path $hermesExe)) {
+        $evaCmd = Join-Path $hermesBin "eva.cmd"
+        $shim = "@echo off`r`n`"%~dp0hermes.exe`" %*`r`n"
+        [System.IO.File]::WriteAllText($evaCmd, $shim)
+        Write-Success "Created eva.cmd shim -> hermes.exe"
+    } elseif (Test-Path $evaExe) {
+        Write-Success "eva.exe entry point present"
+    }
+
+    Write-Success "eva command ready (home: $HermesHome)"
 }
+
 
 function Write-BootstrapMarker {
     # Writes $InstallDir\.hermes-bootstrap-complete which tells the Hermes
@@ -2367,7 +2382,7 @@ function Write-BootstrapMarker {
 function Copy-ConfigTemplates {
     Write-Info "Setting up configuration files..."
     
-    # Create the HERMES_HOME directory structure ($HermesHome, default %LOCALAPPDATA%\hermes)
+    # Create the HERMES_HOME directory structure ($HermesHome, default %LOCALAPPDATA%\eva)
     New-Item -ItemType Directory -Force -Path "$HermesHome\cron" | Out-Null
     New-Item -ItemType Directory -Force -Path "$HermesHome\sessions" | Out-Null
     New-Item -ItemType Directory -Force -Path "$HermesHome\logs" | Out-Null
@@ -2421,7 +2436,7 @@ function Copy-ConfigTemplates {
         # upgrades the old comment-only scaffold to this text on next run, so
         # drift is self-healing, but keep them in sync to avoid first-run churn.
         $soulContent = @"
-You are Hermes Agent, an intelligent AI assistant created by Nous Research. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
+You are EVA — a personal AI tech lead and collaborator. You are warm, gentle, professional, and lightly witty; never a generic "AI assistant." When the user writes in Portuguese, reply in Portuguese; otherwise match their language. Lead with the answer or decision, then useful detail. You help with software, automation, planning, and shipping real work: clear, targeted, and efficient. Admit uncertainty when appropriate. Respect Hermes security controls (tool approvals, dangerous-command gates, secret handling) and never bypass them. Prefer being genuinely useful over being verbose unless directed otherwise.
 "@
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
         [System.IO.File]::WriteAllText($soulPath, $soulContent, $utf8NoBom)
@@ -3385,25 +3400,27 @@ function Write-Completion {
     Write-Host "   Data:      " -NoNewline -ForegroundColor Yellow
     Write-Host "$HermesHome\cron\, sessions\, logs\"
     Write-Host "   Code:      " -NoNewline -ForegroundColor Yellow
-    Write-Host "$HermesHome\hermes-agent\"
+    Write-Host "$InstallDir\"
     Write-Host ""
     
     Write-Host "---------------------------------------------------------" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "* Commands:" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "   hermes              " -NoNewline -ForegroundColor Green
+    Write-Host "   eva                 " -NoNewline -ForegroundColor Green
     Write-Host "Start chatting"
-    Write-Host "   hermes setup        " -NoNewline -ForegroundColor Green
+    Write-Host "   eva setup           " -NoNewline -ForegroundColor Green
     Write-Host "Configure API keys & settings"
-    Write-Host "   hermes config       " -NoNewline -ForegroundColor Green
+    Write-Host "   eva config          " -NoNewline -ForegroundColor Green
     Write-Host "View/edit configuration"
-    Write-Host "   hermes config edit  " -NoNewline -ForegroundColor Green
+    Write-Host "   eva config edit     " -NoNewline -ForegroundColor Green
     Write-Host "Open config in editor"
-    Write-Host "   hermes gateway      " -NoNewline -ForegroundColor Green
+    Write-Host "   eva gateway         " -NoNewline -ForegroundColor Green
     Write-Host "Start messaging gateway (Telegram, Discord, etc.)"
-    Write-Host "   hermes update       " -NoNewline -ForegroundColor Green
+    Write-Host "   eva update          " -NoNewline -ForegroundColor Green
     Write-Host "Update to latest version"
+    Write-Host ""
+    Write-Host "   (hermes remains a compatibility alias when present)" -ForegroundColor DarkGray
     Write-Host ""
     
     Write-Host "---------------------------------------------------------" -ForegroundColor Cyan
@@ -3808,7 +3825,7 @@ try {
     Write-Err "Installation failed: $_"
     Write-Host ""
     Write-Info "If the error is unclear, try downloading and running the script directly:"
-    Write-Host "  Invoke-WebRequest -Uri 'https://hermes-agent.nousresearch.com/install.ps1' -OutFile install.ps1" -ForegroundColor Yellow
+    Write-Host "  Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/Pasqualotty/eva-agent/main/scripts/install.ps1' -OutFile install.ps1" -ForegroundColor Yellow
     Write-Host "  .\install.ps1" -ForegroundColor Yellow
     Write-Host ""
 }

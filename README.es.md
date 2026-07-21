@@ -1,24 +1,24 @@
 <p align="center">
-  <img src="assets/banner.png" alt="Hermes Agent" width="100%">
+  <img src="assets/banner.png" alt="EVA Agent" width="100%">
 </p>
 
-# Hermes Agent ☤
+# EVA Agent
+
 <p align="center">
-  <a href="https://hermes-agent.nousresearch.com/">Hermes Agent</a> | <a href="https://hermes-agent.nousresearch.com/">Hermes Desktop</a>
-</p>
-<p align="center">
-  <a href="https://hermes-agent.nousresearch.com/docs/"><img src="https://img.shields.io/badge/Docs-hermes--agent.nousresearch.com-FFD700?style=for-the-badge" alt="Documentación"></a>
-  <a href="https://discord.gg/NousResearch"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/NousResearch/hermes-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/Licencia-MIT-green?style=for-the-badge" alt="Licencia: MIT"></a>
-  <a href="https://nousresearch.com"><img src="https://img.shields.io/badge/Creado%20por-Nous%20Research-blueviolet?style=for-the-badge" alt="Creado por Nous Research"></a>
+  <a href="https://github.com/Pasqualotty/eva-agent"><img src="https://img.shields.io/badge/GitHub-Pasqualotty%2Feva--agent-181717?style=for-the-badge&logo=github" alt="GitHub"></a>
+  <a href="https://github.com/Pasqualotty/eva-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/Licencia-MIT-green?style=for-the-badge" alt="Licencia: MIT"></a>
   <a href="README.md"><img src="https://img.shields.io/badge/Lang-English-blue?style=for-the-badge" alt="English"></a>
   <a href="README.zh-CN.md"><img src="https://img.shields.io/badge/Lang-中文-red?style=for-the-badge" alt="中文"></a>
   <a href="README.ur-pk.md"><img src="https://img.shields.io/badge/Lang-اردو-green?style=for-the-badge" alt="اردو"></a>
 </p>
 
-**El agente de IA con mejora continua creado por [Nous Research](https://nousresearch.com).** Es el único agente con un bucle de aprendizaje integrado: crea habilidades a partir de la experiencia, las mejora durante el uso, se impulsa a sí mismo a persistir el conocimiento, busca en sus propias conversaciones pasadas y construye un modelo cada vez más profundo de quién eres a lo largo de las sesiones. Ejecútalo en un VPS de $5, un clúster de GPUs o infraestructura sin servidor que cuesta casi nada cuando está inactivo. No está atado a tu laptop — habla con él desde Telegram mientras trabaja en una VM en la nube.
+> **Marca:** EVA Agent · **CLI:** `eva` · **Repo:** [Pasqualotty/eva-agent](https://github.com/Pasqualotty/eva-agent)  
+> Fork MIT de [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent). Este repositorio **es** el motor (skills, memoria, gateway, cron, tools). Créditos Nous Research en LICENSE.  
+> Documentación completa en inglés: [README.md](README.md).
 
-Usa cualquier modelo que quieras — [Nous Portal](https://portal.nousresearch.com), [OpenRouter](https://openrouter.ai) (más de 200 modelos), [NovitaAI](https://novita.ai), [NVIDIA NIM](https://build.nvidia.com) (Nemotron), [Xiaomi MiMo](https://platform.xiaomimimo.com), [z.ai/GLM](https://z.ai), [Kimi/Moonshot](https://platform.moonshot.ai), [MiniMax](https://www.minimax.io), [Hugging Face](https://huggingface.co), OpenAI, o tu propio endpoint. Cambia con `hermes model` — sin cambios de código, sin dependencias.
+**EVA Agent** es un agente de IA personal completo con mejora continua (mismo motor que Hermes, marca EVA). Es el único agente con un bucle de aprendizaje integrado: crea habilidades a partir de la experiencia, las mejora durante el uso, se impulsa a sí mismo a persistir el conocimiento, busca en sus propias conversaciones pasadas y construye un modelo cada vez más profundo de quién eres a lo largo de las sesiones. Ejecútalo en un VPS de $5, un clúster de GPUs o infraestructura sin servidor que cuesta casi nada cuando está inactivo. No está atado a tu laptop — habla con él desde Telegram mientras trabaja en una VM en la nube.
+
+Usa cualquier modelo que quieras — [Nous Portal](https://portal.nousresearch.com), [OpenRouter](https://openrouter.ai) (más de 200 modelos), [NovitaAI](https://novita.ai), [NVIDIA NIM](https://build.nvidia.com) (Nemotron), [Xiaomi MiMo](https://platform.xiaomimimo.com), [z.ai/GLM](https://z.ai), [Kimi/Moonshot](https://platform.moonshot.ai), [MiniMax](https://www.minimax.io), [Hugging Face](https://huggingface.co), OpenAI, o tu propio endpoint. Cambia con `eva model` — sin cambios de código, sin dependencias.
 
 <table>
 <tr><td><b>Una interfaz de terminal real</b></td><td>TUI completa con edición multilínea, autocompletado de comandos, historial de conversaciones, interrupción y redirección, y salida de herramientas en streaming.</td></tr>
@@ -34,10 +34,21 @@ Usa cualquier modelo que quieras — [Nous Portal](https://portal.nousresearch.c
 
 ## Instalación rápida
 
-### Linux, macOS, WSL2, Termux
+Preferido — clonar el repo canónico EVA:
 
 ```bash
-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+git clone https://github.com/Pasqualotty/eva-agent.git
+cd eva-agent
+uv venv --python 3.11 && source .venv/bin/activate
+uv pip install -e ".[all]"
+eva
+```
+
+### Linux, macOS, WSL2, Termux (histórico / referencia)
+
+```bash
+# Los instaladores de marca EVA evolucionan; usa el clone de arriba si no hay URL EVA publicada.
+git clone https://github.com/Pasqualotty/eva-agent.git
 ```
 
 ### Windows (nativo, PowerShell)

@@ -1,12 +1,12 @@
 #!/bin/bash
 # ============================================================================
-# Hermes Agent Installer
+# EVA Agent Installer (fork of Hermes Agent / Nous Research)
 # ============================================================================
 # Installation script for Linux, macOS, and Android/Termux.
 # Uses uv for desktop/server installs and Python's stdlib venv + pip on Termux.
 #
 # Usage:
-#   curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Pasqualotty/eva-agent/main/scripts/install.sh | bash
 #
 # Or with options:
 #   curl -fsSL ... | bash -s -- --no-venv --skip-setup
@@ -43,8 +43,8 @@ NC='\033[0m' # No Color
 BOLD='\033[1m'
 
 # Configuration
-REPO_URL_SSH="git@github.com:NousResearch/hermes-agent.git"
-REPO_URL_HTTPS="https://github.com/NousResearch/hermes-agent.git"
+REPO_URL_SSH="git@github.com:Pasqualotty/eva-agent.git"
+REPO_URL_HTTPS="https://github.com/Pasqualotty/eva-agent.git"
 HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
 # INSTALL_DIR is resolved AFTER arg parsing and OS detection so we can pick an
 # FHS-style layout for root installs.  Track whether the user gave us an
@@ -410,7 +410,7 @@ resolve_install_layout() {
 
     # Termux: package manager manages /data/data/..., keep code in HERMES_HOME.
     if is_termux; then
-        INSTALL_DIR="$HERMES_HOME/hermes-agent"
+        INSTALL_DIR="$HERMES_HOME/eva-agent"
         return 0
     fi
 
@@ -418,8 +418,14 @@ resolve_install_layout() {
     # macOS root installs keep the legacy layout because /usr/local/ on macOS
     # is Homebrew territory and we don't want to fight that.
     if [ "$OS" = "linux" ] && [ "$(id -u)" -eq 0 ]; then
-        if [ -d "$HERMES_HOME/hermes-agent/.git" ]; then
+        if [ -d "$HERMES_HOME/eva-agent/.git" ]; then
+            INSTALL_DIR="$HERMES_HOME/eva-agent"
+            log_info "Existing install detected at $INSTALL_DIR — keeping layout"
+            return 0
+        elif [ -d "$HERMES_HOME/hermes-agent/.git" ]; then
+            # Legacy Hermes layout — keep in place (do not move on upgrade).
             INSTALL_DIR="$HERMES_HOME/hermes-agent"
+            log_info "Using legacy hermes-agent checkout at $INSTALL_DIR"
             log_info "Existing install detected at $INSTALL_DIR — keeping legacy layout"
             log_info "  (new root installs use /usr/local/lib/hermes-agent)"
             return 0
@@ -442,7 +448,7 @@ resolve_install_layout() {
     fi
 
     # Default: non-root, non-Termux → legacy user-scoped layout.
-    INSTALL_DIR="$HERMES_HOME/hermes-agent"
+    INSTALL_DIR="$HERMES_HOME/eva-agent"
 }
 
 get_command_link_dir() {
@@ -527,7 +533,7 @@ detect_os() {
             OS="windows"
             DISTRO="windows"
             log_error "Windows detected. Please use the PowerShell installer:"
-            log_info "  iex (irm https://hermes-agent.nousresearch.com/install.ps1)"
+            log_info "  iex (irm https://raw.githubusercontent.com/Pasqualotty/eva-agent/main/scripts/install.ps1)"
             exit 1
             ;;
         *)
@@ -1823,7 +1829,7 @@ copy_config_templates() {
     # here is self-healing, but keep them in sync to avoid a churn on first run.
     if [ ! -f "$HERMES_HOME/SOUL.md" ]; then
         cat > "$HERMES_HOME/SOUL.md" << 'SOUL_EOF'
-You are Hermes Agent, an intelligent AI assistant created by Nous Research. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
+You are EVA — a personal AI tech lead and collaborator. You are warm, gentle, professional, and lightly witty; never a generic "AI assistant." When the user writes in Portuguese, reply in Portuguese; otherwise match their language. Lead with the answer or decision, then useful detail. You help with software, automation, planning, and shipping real work: clear, targeted, and efficient. Admit uncertainty when appropriate. Respect Hermes security controls (tool approvals, dangerous-command gates, secret handling) and never bypass them. Prefer being genuinely useful over being verbose unless directed otherwise.
 SOUL_EOF
         log_success "Created ~/.hermes/SOUL.md (edit to customize personality)"
     fi

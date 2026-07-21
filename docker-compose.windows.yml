@@ -1,34 +1,39 @@
 #
 # docker-compose.windows.yml — Windows Docker Desktop compatible
 #
-# Differences from docker-compose.yml:
+# EVA Agent (Hermes fork). Differences from docker-compose.yml:
 #   - Removes `network_mode: host` (not supported on Docker Desktop for Windows)
 #   - Uses explicit port mappings instead
-#   - Uses Windows-style volume path for ~/.hermes
+#   - Binds native Windows home: %LOCALAPPDATA%\eva → /opt/data
 #
-# Usage:
-#   docker compose -f docker-compose.windows.yml up -d
+# Usage (from repo root, no admin beyond Docker Desktop):
+#   docker compose -f docker-compose.windows.yml up -d --build
+#
+# HERMES_HOME inside the container remains /opt/data (engine contract).
+# On the host, EVA data lives under %LOCALAPPDATA%\eva.
 #
 services:
   gateway:
-    image: nousresearch/hermes-agent:latest
-    container_name: hermes
+    build: .
+    image: eva-agent:local
+    container_name: eva
     restart: unless-stopped
     volumes:
-      - ${USERPROFILE}/.hermes:/opt/data
+      - ${LOCALAPPDATA}/eva:/opt/data
     environment:
       - HERMES_UID=10000
       - HERMES_GID=10000
     command: ["gateway", "run"]
 
   dashboard:
-    image: nousresearch/hermes-agent:latest
-    container_name: hermes-dashboard
+    build: .
+    image: eva-agent:local
+    container_name: eva-dashboard
     restart: unless-stopped
     depends_on:
       - gateway
     volumes:
-      - ${USERPROFILE}/.hermes:/opt/data
+      - ${LOCALAPPDATA}/eva:/opt/data
     environment:
       - HERMES_UID=10000
       - HERMES_GID=10000
