@@ -1,0 +1,45 @@
+# EVA Agent — example config for messaging gateway (NO secrets)
+#
+# Merge into:  %LOCALAPPDATA%\eva\config.yaml
+#   (or $EVA_HOME/config.yaml)
+#
+# Secrets (bot tokens, API keys) stay in .env — see gateway.env.example.
+# This file only documents non-secret knobs operators usually touch.
+
+# Model used by CLI + gateway (provider credentials remain in .env)
+model:
+  # default: "anthropic/claude-sonnet-4"
+  provider: "auto"
+
+# Working directory for tools when the session is messaging (not interactive CLI cwd)
+terminal:
+  # cwd: "C:\\Users\\YOU\\projects"
+  cwd: null
+
+display:
+  # How noisy gateway background process notifications are: all | result | error | off
+  background_process_notifications: "result"
+
+gateway:
+  # Wait (seconds) for each platform adapter to connect on startup
+  platform_connect_timeout: 30
+
+  # Keep legacy sessions.json mirror of the routing index (default true)
+  write_sessions_json: true
+
+  # Durable delivery ledger for crash recovery of final replies
+  delivery_ledger: true
+
+  # Optional per-platform extras (example: Telegram status text on profile)
+  # platforms:
+  #   telegram:
+  #     extra:
+  #       status_indicator: false
+  #       command_menu:
+  #         max_commands: 60
+
+# Skills / tools: enable messaging-safe sets via `eva tools` when needed.
+# tools:
+#   messaging:
+#     enabled: []
+#     disabled: []

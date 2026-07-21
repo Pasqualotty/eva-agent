@@ -1,7 +1,8 @@
 """
-Gateway subcommand for hermes CLI.
+Gateway subcommand for EVA Agent CLI (hermes compatibility alias).
 
-Handles: hermes gateway [run|start|stop|restart|status|install|uninstall|setup]
+Handles: eva gateway [run|start|stop|restart|status|install|uninstall|setup]
+         (alias: hermes gateway …)
 """
 
 import asyncio
@@ -3069,7 +3070,7 @@ def refresh_systemd_unit_if_needed(system: bool = False) -> bool:
     unit_path.write_text(new_unit, encoding="utf-8")
     _run_systemctl(["daemon-reload"], system=system, check=True, timeout=30)
     print(
-        f"↻ Updated gateway {_service_scope_label(system)} service definition to match the current Hermes install"
+        f"↻ Updated gateway {_service_scope_label(system)} service definition to match the current EVA install"
     )
     return True
 
@@ -4195,7 +4196,7 @@ def refresh_launchd_plist_if_needed() -> bool:
             _launchd_reload_log_path(),
         )
     print(
-        "↻ Updated gateway launchd service definition to match the current Hermes install"
+        "↻ Updated gateway launchd service definition to match the current EVA install"
     )
     return True
 
@@ -4513,9 +4514,9 @@ def launchd_status(deep: bool = False):
     # ── Report ──
     print(f"Launchd plist: {plist_path}")
     if launchd_plist_is_current():
-        print("✓ Service definition matches the current Hermes install")
+        print("✓ Service definition matches the current EVA install")
     else:
-        print("⚠ Service definition is stale relative to the current Hermes install")
+        print("⚠ Service definition is stale relative to the current EVA install")
         print("  Run: hermes gateway start")
 
     if service_listed:
@@ -4855,7 +4856,7 @@ def run_gateway(verbose: int = 0, quiet: bool = False, replace: bool = False, fo
     from gateway.run import start_gateway
 
     print("┌─────────────────────────────────────────────────────────┐")
-    print("│           ⚕ Hermes Gateway Starting...                 │")
+    print("│           ⚕ EVA Gateway Starting...                    │")
     print("├─────────────────────────────────────────────────────────┤")
     print("│  Messaging platforms + cron scheduler                    │")
     print("│  Press Ctrl+C to stop                                   │")

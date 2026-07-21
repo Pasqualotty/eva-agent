@@ -52,6 +52,9 @@ eva
 
 If `eva` is missing but `hermes` works, re-run the installer (it writes `eva.cmd` next to `hermes.exe`) or use `hermes` until the `eva` entry point lands in `pyproject.toml`.
 
+## Messaging gateway (Telegram, etc.)
+
+See **[gateway-windows.md](./gateway-windows.md)** for `eva gateway` on Windows, DM pairing, env templates, and the human checklist (bot token from BotFather).
 ## Docker Desktop (Windows)
 
 ```powershell
