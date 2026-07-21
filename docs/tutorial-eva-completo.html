@@ -226,6 +226,7 @@
       <a href="#bootstrap">Bootstrap (dev)</a>
       <a href="#path">PATH permanente</a>
       <a href="#setup">Setup do modelo</a>
+      <a href="#oauth">OAuth Grok/OpenAI</a>
       <a class="section" href="#cli">Usar no terminal</a>
       <a href="#comandos">Comandos essenciais</a>
       <a href="#skills">Skills e memória</a>
@@ -354,7 +355,32 @@ ANTHROPIC_API_KEY=...
 TELEGRAM_BOT_TOKEN=...   # só se for usar gateway</code></pre>
 
       <!-- CLI -->
-      <h2 id="cli">5. Usar no terminal (core)</h2>
+      
+      <h2 id="oauth">4.4 Conectar via OAuth (Grok e OpenAI, sem API key)</h2>
+      <p>
+        A EVA já tem login por <strong>OAuth device code</strong> (abre o browser, você aprova).
+        Não é obrigatório colar API key para Grok nem para OpenAI Codex.
+      </p>
+      <div class="card ok">
+        <strong>Grok (xAI)</strong> — SuperGrok ou X Premium+
+<pre><code>eva auth add xai-oauth --type oauth
+# aprove em accounts.x.ai
+eva model   # escolha "xAI Grok OAuth"
+eva</code></pre>
+        <strong>OpenAI Codex</strong> — conta OpenAI (fluxo Codex)
+<pre><code>eva auth add openai-codex --type oauth
+# aprove em auth.openai.com
+eva model   # escolha OpenAI Codex
+eva</code></pre>
+        <strong>API key</strong> (se preferir): <code>eva auth add openai-api --type api-key</code>
+        ou <code>XAI_API_KEY</code> / <code>OPENAI_API_KEY</code> no <code>.env</code>.
+      </div>
+      <p>Detalhes: <code>docs/oauth-providers.md</code> · listar: <code>eva auth list</code> · status: <code>eva auth status</code>.</p>
+      <div class="card warn">
+        OAuth é <strong>interativo</strong>: precisa de browser (ou <code>--no-browser</code> + URL no celular).
+        Tokens ficam em <code>%LOCALAPPDATA%\eva</code>, não no git.
+      </div>
+<h2 id="cli">5. Usar no terminal (core)</h2>
       <p>
         O modo principal de “agente completo” é a CLI interativa. É aqui que skills, tools,
         memória e multi-passo brilham.
