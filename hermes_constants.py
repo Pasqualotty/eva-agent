@@ -1,7 +1,14 @@
-"""Shared constants for Hermes Agent.
+"""Shared constants for EVA Agent (Hermes fork).
 
 Import-safe module with no dependencies — can be imported from anywhere
 without risk of circular imports.
+
+Identity note (EVA rebrand):
+  * Canonical home env var is ``EVA_HOME``; ``HERMES_HOME`` is a one-release
+    compatibility alias when ``EVA_HOME`` is unset.
+  * Platform defaults: ``%LOCALAPPDATA%\\eva`` on Windows, ``~/.eva`` on POSIX.
+  * Public call sites keep ``get_hermes_home`` / friends as stable API names;
+    ``get_eva_home`` and related aliases point at the same implementations.
 """
 
 import os
@@ -19,9 +26,39 @@ _HERMES_HOME_OVERRIDE: ContextVar[str | object] = ContextVar(
     "_HERMES_HOME_OVERRIDE", default=_UNSET
 )
 
+# Preferred brand names first; HERMES_* aliases last (compat for one release).
+_HOME_ENV_VARS = ("EVA_HOME", "HERMES_HOME")
+_OPTIONAL_SKILLS_ENV_VARS = ("EVA_OPTIONAL_SKILLS", "HERMES_OPTIONAL_SKILLS")
+_OPTIONAL_MCPS_ENV_VARS = ("EVA_OPTIONAL_MCPS", "HERMES_OPTIONAL_MCPS")
+_BUNDLED_SKILLS_ENV_VARS = ("EVA_BUNDLED_SKILLS", "HERMES_BUNDLED_SKILLS")
+_NODE_TARGET_MAJOR_ENV_VARS = ("EVA_NODE_TARGET_MAJOR", "HERMES_NODE_TARGET_MAJOR")
+_REAL_HOME_ENV_VARS = ("EVA_REAL_HOME", "HERMES_REAL_HOME")
+
+
+def _env_first(*names: str, default: str = "") -> str:
+    """Return the first non-empty process env value among *names*."""
+    for name in names:
+        val = os.environ.get(name, "").strip()
+        if val:
+            return val
+    return default
+
+
+def _env_first_from(env: dict | None, *names: str, default: str = "") -> str:
+    """Return the first non-empty value among *names* from *env* then ``os.environ``."""
+    for name in names:
+        if env is not None:
+            val = str(env.get(name) or "").strip()
+            if val:
+                return val
+        val = os.environ.get(name, "").strip()
+        if val:
+            return val
+    return default
+
 
 def set_hermes_home_override(path: str | Path | None) -> Token:
-    """Set a context-local Hermes home override and return its reset token.
+    """Set a context-local agent home override and return its reset token.
 
     This is for in-process, per-task scoping.  It deliberately does not mutate
     ``os.environ`` because that is shared by every thread in the process.
@@ -31,12 +68,12 @@ def set_hermes_home_override(path: str | Path | None) -> Token:
 
 
 def reset_hermes_home_override(token: Token) -> None:
-    """Restore the previous context-local Hermes home override."""
+    """Restore the previous context-local agent home override."""
     _HERMES_HOME_OVERRIDE.reset(token)
 
 
 def get_hermes_home_override() -> str | None:
-    """Return the active context-local Hermes home override, if any."""
+    """Return the active context-local agent home override, if any."""
     override = _HERMES_HOME_OVERRIDE.get()
     if override is _UNSET or not override:
         return None
@@ -44,24 +81,29 @@ def get_hermes_home_override() -> str | None:
 
 
 def _get_platform_default_hermes_home() -> Path:
-    """Return the platform-native default Hermes home path."""
+    """Return the platform-native default EVA home path.
+
+    Windows: ``%LOCALAPPDATA%\\eva`` (fallback ``~/AppData/Local/eva``).
+    POSIX: ``~/.eva``.
+    """
     if sys.platform == "win32":
         local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
         base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
-        return base / "hermes"
-    return Path.home() / ".hermes"
+        return base / "eva"
+    return Path.home() / ".eva"
 
 
 def _hermes_home_from_env() -> Path:
-    """Resolve HERMES_HOME from the process environment only.
+    """Resolve agent home from the process environment only.
 
-    Reads the ``HERMES_HOME`` env var, falling back to the platform-native
-    default.  Deliberately ignores the context-local override installed by
-    :func:`set_hermes_home_override`, so this reflects the process/launch
-    scope rather than a per-task profile.  Shared by :func:`get_hermes_home`
-    and :func:`get_process_hermes_home` so the two never drift.
+    Reads ``EVA_HOME``, then the ``HERMES_HOME`` compatibility alias, then
+    the platform-native default.  Deliberately ignores the context-local
+    override installed by :func:`set_hermes_home_override`, so this reflects
+    the process/launch scope rather than a per-task profile.  Shared by
+    :func:`get_hermes_home` and :func:`get_process_hermes_home` so the two
+    never drift.
     """
-    val = os.environ.get("HERMES_HOME", "").strip()
+    val = _env_first(*_HOME_ENV_VARS)
     if val:
         return Path(val)
     return _get_platform_default_hermes_home()
@@ -70,8 +112,9 @@ def _hermes_home_from_env() -> Path:
 def _warn_profile_fallback_once() -> None:
     """Warn once when falling back to the default home while a profile is active.
 
-    Guard: if a non-default profile is sticky-active but ``HERMES_HOME`` is
-    unset, the fallback to the default profile is almost certainly wrong.
+    Guard: if a non-default profile is sticky-active but ``EVA_HOME`` /
+    ``HERMES_HOME`` is unset, the fallback to the default profile is almost
+    certainly wrong.
     """
     global _profile_fallback_warned
     if _profile_fallback_warned:
@@ -90,12 +133,12 @@ def _warn_profile_fallback_once() -> None:
         # configured, and (b) root-logger propagation would double-emit
         # on consoles where a StreamHandler is already attached.
         msg = (
-            f"[HERMES_HOME fallback] HERMES_HOME is unset but active "
+            f"[EVA_HOME fallback] EVA_HOME/HERMES_HOME is unset but active "
             f"profile is {active!r}. Falling back to {fallback_home}, which "
             f"is the DEFAULT profile — not {active!r}. Any data this "
             f"process writes will land in the wrong profile. The "
-            f"subprocess spawner should pass HERMES_HOME explicitly "
-            f"(see issue #18594)."
+            f"subprocess spawner should pass EVA_HOME (or HERMES_HOME) "
+            f"explicitly (see issue #18594)."
         )
         try:
             sys.stderr.write(msg + "\n")
@@ -105,41 +148,40 @@ def _warn_profile_fallback_once() -> None:
 
 
 def get_hermes_home() -> Path:
-    """Return the Hermes home directory (default: platform-native path).
+    """Return the agent home directory (default: platform-native EVA path).
 
     Resolution order: context-local override (see
-    :func:`set_hermes_home_override`) → ``HERMES_HOME`` env var → the
-    platform-native default.  This is the single source of truth — all other
-    copies should import this.
+    :func:`set_hermes_home_override`) → ``EVA_HOME`` → ``HERMES_HOME``
+    (compat) → the platform-native default (``%LOCALAPPDATA%\\eva`` /
+    ``~/.eva``).  This is the single source of truth — all other copies
+    should import this.
 
-    When ``HERMES_HOME`` is unset but an ``active_profile`` file indicates
-    a non-default profile is active, logs a loud one-shot warning to
-    ``errors.log`` so cross-profile data corruption is diagnosable instead
-    of silent.  Behavior is unchanged otherwise — we still return
-    the platform-native default — because raising here would brick 30+ module-level
-    callers that import this at load time.  Subprocess spawners are
-    expected to propagate ``HERMES_HOME`` explicitly (see the systemd
-    template in ``hermes_cli/gateway.py`` and the kanban dispatcher in
-    ``hermes_cli/kanban_db.py``).  See https://github.com/NousResearch/hermes-agent/issues/18594.
+    When home env vars are unset but an ``active_profile`` file indicates
+    a non-default profile is active, logs a loud one-shot warning so
+    cross-profile data corruption is diagnosable instead of silent.
+    Behavior is unchanged otherwise — we still return the platform-native
+    default — because raising here would brick 30+ module-level callers that
+    import this at load time.  Subprocess spawners are expected to propagate
+    ``EVA_HOME`` (or ``HERMES_HOME``) explicitly.
     """
     override = get_hermes_home_override()
     if override:
         return Path(override)
 
-    if not os.environ.get("HERMES_HOME", "").strip():
+    if not _env_first(*_HOME_ENV_VARS):
         _warn_profile_fallback_once()
 
     return _hermes_home_from_env()
 
 
 def get_process_hermes_home() -> Path:
-    """Return the Hermes home for the running process, ignoring task overrides.
+    """Return the agent home for the running process, ignoring task overrides.
 
     Unlike :func:`get_hermes_home`, this never follows the context-local
     override set by :func:`set_hermes_home_override`.  It resolves only the
-    process ``HERMES_HOME`` env var (falling back to the platform default),
-    so it reflects the scope the process was launched under **as long as
-    nothing mutates ``os.environ`` in-process**.
+    process ``EVA_HOME`` / ``HERMES_HOME`` env vars (falling back to the
+    platform default), so it reflects the scope the process was launched
+    under **as long as nothing mutates ``os.environ`` in-process**.
 
     Use this for machine/process-level dashboard-owned assets — theme YAML,
     dashboard plugin manifests — that live under the server's launch home and
@@ -152,30 +194,30 @@ def get_process_hermes_home() -> Path:
 
 
 def get_default_hermes_root() -> Path:
-    """Return the root Hermes directory for profile-level operations.
+    """Return the root agent directory for profile-level operations.
 
-    In standard deployments this is the platform-native Hermes home
-    (``~/.hermes`` on POSIX, ``%LOCALAPPDATA%\\hermes`` on native Windows).
+    In standard deployments this is the platform-native EVA home
+    (``~/.eva`` on POSIX, ``%LOCALAPPDATA%\\eva`` on native Windows).
 
-    In Docker or custom deployments where ``HERMES_HOME`` points outside
-    ``~/.hermes`` (e.g. ``/opt/data``), returns ``HERMES_HOME`` directly
-    — that IS the root.
+    In Docker or custom deployments where ``EVA_HOME`` / ``HERMES_HOME``
+    points outside the native default (e.g. ``/opt/data``), returns that
+    path directly — that IS the root.
 
-    In profile mode where ``HERMES_HOME`` is ``<root>/profiles/<name>``,
-    returns ``<root>`` so that ``profile list`` can see all profiles.
-    Works both for standard (``~/.hermes/profiles/coder``) and Docker
+    In profile mode where home is ``<root>/profiles/<name>``, returns
+    ``<root>`` so that ``profile list`` can see all profiles.
+    Works both for standard (``~/.eva/profiles/coder``) and Docker
     (``/opt/data/profiles/coder``) layouts.
 
     Import-safe — no dependencies beyond stdlib.
     """
     native_home = _get_platform_default_hermes_home()
-    env_home = os.environ.get("HERMES_HOME", "")
+    env_home = _env_first(*_HOME_ENV_VARS)
     if not env_home:
         return native_home
     env_path = Path(env_home)
     try:
         env_path.resolve().relative_to(native_home.resolve())
-        # HERMES_HOME is under ~/.hermes (normal or profile mode)
+        # Home is under the native root (normal or profile mode)
         return native_home
     except ValueError:
         pass
@@ -187,7 +229,7 @@ def get_default_hermes_root() -> Path:
     if env_path.parent.name == "profiles":
         return env_path.parent.parent
 
-    # Not a profile path — HERMES_HOME itself is the root
+    # Not a profile path — home env itself is the root
     return env_path
 
 
@@ -212,9 +254,9 @@ def get_optional_skills_dir(default: Path | None = None) -> Path:
     """Return the optional-skills directory, honoring package-manager wrappers.
 
     Packaged installs may ship ``optional-skills`` outside the Python package
-    tree and expose it via ``HERMES_OPTIONAL_SKILLS``.
+    tree and expose it via ``EVA_OPTIONAL_SKILLS`` (or ``HERMES_OPTIONAL_SKILLS``).
     """
-    override = os.getenv("HERMES_OPTIONAL_SKILLS", "").strip()
+    override = _env_first(*_OPTIONAL_SKILLS_ENV_VARS)
     if override:
         return Path(override)
     packaged = _get_packaged_data_dir("optional-skills")
@@ -231,9 +273,10 @@ def get_optional_mcps_dir(default: Path | None = None) -> Path:
     Mirrors :func:`get_optional_skills_dir` for the MCP catalog (Nous-approved
     Model Context Protocol servers shipped with the repo but disabled by
     default). Packaged installs may ship ``optional-mcps`` outside the Python
-    package tree and expose it via ``HERMES_OPTIONAL_MCPS``.
+    package tree and expose it via ``EVA_OPTIONAL_MCPS`` (or
+    ``HERMES_OPTIONAL_MCPS``).
     """
-    override = os.getenv("HERMES_OPTIONAL_MCPS", "").strip()
+    override = _env_first(*_OPTIONAL_MCPS_ENV_VARS)
     if override:
         return Path(override)
     packaged = _get_packaged_data_dir("optional-mcps")
@@ -248,12 +291,12 @@ def get_bundled_skills_dir(default: Path | None = None) -> Path:
     """Return the bundled skills directory for source and packaged installs.
 
     Resolution order:
-        1. ``HERMES_BUNDLED_SKILLS`` env var (Nix wrapper / explicit override)
+        1. ``EVA_BUNDLED_SKILLS`` / ``HERMES_BUNDLED_SKILLS`` env var
         2. Wheel-installed ``<sysconfig data>/skills`` (pip install path)
         3. Caller-supplied ``default`` (typically the source-checkout path)
-        4. ``<HERMES_HOME>/skills`` last-resort
+        4. ``<EVA_HOME>/skills`` last-resort
     """
-    override = os.getenv("HERMES_BUNDLED_SKILLS", "").strip()
+    override = _env_first(*_BUNDLED_SKILLS_ENV_VARS)
     if override:
         return Path(override)
     packaged = _get_packaged_data_dir("skills")
@@ -280,8 +323,8 @@ def get_hermes_dir(new_subpath: str, old_name: str) -> Path:
     ``platforms/pairing/``.
 
     Args:
-        new_subpath: Preferred path relative to HERMES_HOME (e.g. ``"cache/images"``).
-        old_name: Legacy path relative to HERMES_HOME (e.g. ``"image_cache"``).
+        new_subpath: Preferred path relative to agent home (e.g. ``"cache/images"``).
+        old_name: Legacy path relative to agent home (e.g. ``"image_cache"``).
 
     Returns:
         Absolute ``Path`` — legacy location if it exists with content,
@@ -295,11 +338,11 @@ def get_hermes_dir(new_subpath: str, old_name: str) -> Path:
 
 
 def iter_hermes_node_dirs(home: Path | None = None) -> list[Path]:
-    """Return Hermes-managed Node.js directories in preferred lookup order.
+    """Return agent-managed Node.js directories in preferred lookup order.
 
     Windows installs from ``scripts/install.ps1`` unpack portable Node directly
-    into ``%LOCALAPPDATA%\\hermes\\node``. POSIX installs use
-    ``$HERMES_HOME/node/bin``. Include both shapes on every platform so mixed
+    into ``%LOCALAPPDATA%\\eva\\node``. POSIX installs use
+    ``$EVA_HOME/node/bin``. Include both shapes on every platform so mixed
     or migrated installs still work.
     """
     root = home or get_hermes_home()
@@ -328,7 +371,9 @@ def _candidate_node_command_names(command: str) -> list[str]:
     return [f"{base}.cmd", f"{base}.exe", base]
 
 
-_HERMES_NODE_TARGET_MAJOR = int(os.environ.get("HERMES_NODE_TARGET_MAJOR", "22"))
+_HERMES_NODE_TARGET_MAJOR = int(
+    _env_first(*_NODE_TARGET_MAJOR_ENV_VARS, default="22") or "22"
+)
 _managed_node_heal_attempted = False
 _NODE_BOOTSTRAP_SCRIPT = Path(__file__).resolve().parent / "scripts" / "lib" / "node-bootstrap.sh"
 
@@ -336,12 +381,12 @@ _NODE_BOOTSTRAP_SCRIPT = Path(__file__).resolve().parent / "scripts" / "lib" / "
 def node_tool_runnable(path: str | None) -> bool:
     """Return True only when *path* is a Node/npm/npx binary that actually runs.
 
-    Hermes-managed Node trees live under ``$HERMES_HOME/node`` (or a profile's
-    ``HERMES_HOME``). A partial upgrade or interrupted install can leave
-    ``bin/npm`` behind while ``lib/cli.js`` is missing — the wrapper exists but
-    immediately throws ``MODULE_NOT_FOUND``. ``find_hermes_node_executable``
-    used to trust file presence alone, so ``hermes update`` would pick that
-    broken npm and fail the Node refresh / web UI build.
+    Agent-managed Node trees live under ``$EVA_HOME/node`` (or a profile's
+    home). A partial upgrade or interrupted install can leave ``bin/npm``
+    behind while ``lib/cli.js`` is missing — the wrapper exists but immediately
+    throws ``MODULE_NOT_FOUND``. ``find_hermes_node_executable`` used to trust
+    file presence alone, so ``eva update`` would pick that broken npm and fail
+    the Node refresh / web UI build.
 
     Probe with ``--version`` (same pattern as :func:`agent_browser_runnable`) so
     broken managed wrappers are detected before use.
@@ -388,7 +433,7 @@ def hermes_managed_node_tree_present(home: Path | None = None) -> bool:
 
 
 def _heal_managed_node_windows() -> bool:
-    """Redownload the portable Node zip into ``%HERMES_HOME%\\node`` on Windows."""
+    """Redownload the portable Node zip into ``%EVA_HOME%\\node`` on Windows."""
     import re
     import tempfile
     import urllib.request
@@ -478,7 +523,11 @@ def heal_hermes_managed_node() -> bool:
                 "-c",
                 f'source "{_NODE_BOOTSTRAP_SCRIPT}" && heal_managed_node',
             ],
-            env={**os.environ, "HERMES_HOME": str(get_hermes_home())},
+            env={
+                **os.environ,
+                "EVA_HOME": str(get_hermes_home()),
+                "HERMES_HOME": str(get_hermes_home()),  # compat alias
+            },
             capture_output=True,
             timeout=300,
             check=False,
@@ -670,17 +719,18 @@ def _legacy_path_has_content(path: Path) -> bool:
 
 
 def display_hermes_home() -> str:
-    """Return a user-friendly display string for the current HERMES_HOME.
+    """Return a user-friendly display string for the current agent home.
 
-    Uses ``~/`` shorthand for readability::
+    Uses ``~/`` shorthand for readability when under the user home::
 
-        default:  ``~/.hermes``
-        profile:  ``~/.hermes/profiles/coder``
-        custom:   ``/opt/hermes-custom``
+        default (POSIX):  ``~/.eva``
+        profile:          ``~/.eva/profiles/coder``
+        Windows default:  ``%LOCALAPPDATA%\\eva`` (absolute if not under ~)
+        custom:           ``/opt/eva-custom``
 
     Use this in **user-facing** print/log messages instead of hardcoding
-    ``~/.hermes``.  For code that needs a real ``Path``, use
-    :func:`get_hermes_home` instead.
+    home paths.  For code that needs a real ``Path``, use
+    :func:`get_hermes_home` (or :func:`get_eva_home`) instead.
     """
     home = get_hermes_home()
     try:
@@ -694,8 +744,8 @@ def secure_parent_dir(path: Path) -> None:
 
     Refuses to chmod ``/`` or any top-level directory (resolved parent with
     fewer than 3 parts, i.e. ``/`` or any direct child like ``/usr``) to
-    prevent catastrophic host bricking when ``HERMES_HOME`` or other path
-    env vars resolve to an unexpected location.
+    prevent catastrophic host bricking when ``EVA_HOME`` / ``HERMES_HOME``
+    or other path env vars resolve to an unexpected location.
 
     See https://github.com/NousResearch/hermes-agent/issues/25821.
     """
@@ -721,8 +771,10 @@ def _norm_home_path(path: str | None) -> str:
 
 
 def _profile_home_path(env: dict[str, str] | None = None) -> str | None:
-    """Return ``{HERMES_HOME}/home`` when the profile-home directory exists."""
-    hermes_home = get_hermes_home_override() or (env or {}).get("HERMES_HOME") or os.getenv("HERMES_HOME")
+    """Return ``{EVA_HOME}/home`` when the profile-home directory exists."""
+    hermes_home = get_hermes_home_override() or _env_first_from(
+        env, *_HOME_ENV_VARS
+    )
     if not hermes_home:
         return None
     profile_home = os.path.join(hermes_home, "home")
@@ -739,7 +791,7 @@ def _iter_real_home_candidates(env: dict[str, str] | None = None) -> list[str]:
     """Return likely OS-user home candidates in trust order."""
     env = env or {}
     candidates: list[str] = []
-    explicit = str(env.get("HERMES_REAL_HOME") or os.getenv("HERMES_REAL_HOME", "")).strip()
+    explicit = _env_first_from(env, *_REAL_HOME_ENV_VARS)
     if explicit:
         candidates.append(explicit)
     home = str(env.get("HOME") or os.getenv("HOME", "")).strip()
@@ -767,11 +819,11 @@ def _iter_real_home_candidates(env: dict[str, str] | None = None) -> list[str]:
 
 
 def get_real_home(env: dict[str, str] | None = None) -> str:
-    """Return the OS user's real home directory, avoiding Hermes profile HOME.
+    """Return the OS user's real home directory, avoiding agent profile HOME.
 
-    ``HERMES_HOME`` scopes Hermes state. ``HOME`` is reserved for the OS/user
+    ``EVA_HOME`` scopes agent state. ``HOME`` is reserved for the OS/user
     account and the many external CLIs that store credentials under ``~``.
-    If a parent process is already running with ``HOME={HERMES_HOME}/home``,
+    If a parent process is already running with ``HOME={EVA_HOME}/home``,
     this helper repairs back to the account home when possible.
     """
     profile_home = _profile_home_path(env)
@@ -793,10 +845,10 @@ def get_subprocess_home(env: dict[str, str] | None = None) -> str | None:
     ``TERMINAL_HOME_MODE``):
 
     * ``auto`` (default): host installs keep the real user HOME; containers use
-      ``{HERMES_HOME}/home`` for persistent state. If a host parent already has
+      ``{EVA_HOME}/home`` for persistent state. If a host parent already has
       HOME pointed at the profile home, repair subprocesses back to real HOME.
     * ``real``: always prefer the real OS-user HOME.
-    * ``profile``: use ``{HERMES_HOME}/home`` when it exists, preserving the
+    * ``profile``: use ``{EVA_HOME}/home`` when it exists, preserving the
       older strict per-profile tool-config isolation.
     """
     env = env or {}
@@ -823,10 +875,11 @@ def get_subprocess_home(env: dict[str, str] | None = None) -> str | None:
 
 
 def apply_subprocess_home_env(env: dict[str, str]) -> None:
-    """Apply Hermes' subprocess HOME contract to *env* in-place."""
+    """Apply the agent subprocess HOME contract to *env* in-place."""
     real_home = get_real_home(env)
     if real_home:
-        env["HERMES_REAL_HOME"] = real_home
+        env["EVA_REAL_HOME"] = real_home
+        env["HERMES_REAL_HOME"] = real_home  # compat alias
     home = get_subprocess_home(env)
     if home:
         env["HOME"] = home
@@ -1184,7 +1237,7 @@ def is_container() -> bool:
 
 
 def get_config_path() -> Path:
-    """Return the path to ``config.yaml`` under HERMES_HOME.
+    """Return the path to ``config.yaml`` under the agent home.
 
     Replaces the ``get_hermes_home() / "config.yaml"`` pattern repeated
     in 7+ files (skill_utils.py, hermes_logging.py, hermes_time.py, etc.).
@@ -1193,14 +1246,26 @@ def get_config_path() -> Path:
 
 
 def get_skills_dir() -> Path:
-    """Return the path to the skills directory under HERMES_HOME."""
+    """Return the path to the skills directory under the agent home."""
     return get_hermes_home() / "skills"
 
 
 
 def get_env_path() -> Path:
-    """Return the path to the ``.env`` file under HERMES_HOME."""
+    """Return the path to the ``.env`` file under the agent home."""
     return get_hermes_home() / ".env"
+
+
+# ─── EVA aliases (stable Hermes API names remain primary for call-site compat) ─
+
+get_eva_home = get_hermes_home
+get_process_eva_home = get_process_hermes_home
+get_default_eva_root = get_default_hermes_root
+display_eva_home = display_hermes_home
+set_eva_home_override = set_hermes_home_override
+reset_eva_home_override = reset_hermes_home_override
+get_eva_home_override = get_hermes_home_override
+get_eva_dir = get_hermes_dir
 
 
 # ─── Network Preferences ─────────────────────────────────────────────────────

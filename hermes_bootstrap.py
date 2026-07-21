@@ -1,4 +1,4 @@
-"""Windows UTF-8 bootstrap for Hermes entry points.
+"""Windows UTF-8 bootstrap for EVA entry points (Hermes fork).
 
 Python on Windows has two long-standing text-encoding footguns:
 
@@ -13,10 +13,10 @@ Python on Windows has two long-standing text-encoding footguns:
    cp1252 defaults and hits the same UnicodeEncodeError.
 
 This module fixes both on Windows *only* — POSIX is untouched.  It
-should be imported at the very top of every Hermes entry point
-(``hermes``, ``hermes-agent``, ``hermes-acp``, ``python -m gateway.run``,
-``batch_runner.py``, ``cron/scheduler.py``) before any other imports
-that might do file I/O or print to stdout.
+should be imported at the very top of every EVA entry point
+(``eva``, ``eva-agent``, ``eva-acp``, and legacy ``hermes`` aliases,
+``python -m gateway.run``, ``batch_runner.py``, ``cron/scheduler.py``)
+before any other imports that might do file I/O or print to stdout.
 
 What this module does on Windows:
 

@@ -1,8 +1,9 @@
-"""Centralized logging setup for Hermes Agent.
+"""Centralized logging setup for EVA Agent (Hermes fork).
 
 Provides a single ``setup_logging()`` entry point that both the CLI and
 gateway call early in their startup path.  All log files live under
-``~/.hermes/logs/`` (profile-aware via ``get_hermes_home()``).
+the agent home ``logs/`` directory (profile-aware via ``get_hermes_home()``;
+default ``~/.eva/logs/`` on POSIX, ``%LOCALAPPDATA%\\eva\\logs`` on Windows).
 
 Log files produced:
     agent.log   — INFO+, all agent/tool/session activity (the main log)
@@ -42,7 +43,7 @@ from typing import Optional, Sequence
 # On Windows, stdlib ``RotatingFileHandler`` calls ``os.rename()`` in
 # ``doRollover()`` and fails with ``PermissionError [WinError 32]`` whenever
 # another process holds an append-mode handle on ``agent.log`` — which is
-# essentially always in Hermes (TUI, gateway, ``hy_memory`` server, MCP
+# essentially always in EVA (TUI, gateway, ``hy_memory`` server, MCP
 # servers, and on-demand CLI commands all log from separate processes),
 # pinning ``agent.log`` at the 5 MiB threshold and spamming stderr with
 # a traceback on every emit. ``concurrent-log-handler`` wraps the rename in a

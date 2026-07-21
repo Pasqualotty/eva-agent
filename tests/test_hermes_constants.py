@@ -34,89 +34,116 @@ class TestGetDefaultHermesRoot:
     """Tests for get_default_hermes_root() — Docker/custom deployment awareness."""
 
     def test_no_hermes_home_returns_native(self, tmp_path, monkeypatch):
-        """When HERMES_HOME is not set, returns ~/.hermes."""
+        """When EVA_HOME/HERMES_HOME is not set on POSIX, returns ~/.eva."""
+        monkeypatch.delenv("EVA_HOME", raising=False)
         monkeypatch.delenv("HERMES_HOME", raising=False)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        monkeypatch.setattr(hermes_constants.sys, "platform", "linux")
 
-        assert get_default_hermes_root() == tmp_path / ".hermes"
+        assert get_default_hermes_root() == tmp_path / ".eva"
 
     def test_hermes_home_is_native(self, tmp_path, monkeypatch):
-        """When HERMES_HOME = ~/.hermes, returns ~/.hermes."""
-        native = tmp_path / ".hermes"
+        """When HERMES_HOME = ~/.eva (compat alias), returns that path."""
+        native = tmp_path / ".eva"
         native.mkdir()
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        monkeypatch.delenv("EVA_HOME", raising=False)
         monkeypatch.setenv("HERMES_HOME", str(native))
         assert get_default_hermes_root() == native
 
+    def test_eva_home_is_native(self, tmp_path, monkeypatch):
+        """When EVA_HOME = ~/.eva, returns ~/.eva."""
+        native = tmp_path / ".eva"
+        native.mkdir()
+        monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        monkeypatch.setenv("EVA_HOME", str(native))
+        monkeypatch.delenv("HERMES_HOME", raising=False)
+        assert get_default_hermes_root() == native
+
     def test_hermes_home_is_profile(self, tmp_path, monkeypatch):
-        """When HERMES_HOME is a profile under ~/.hermes, returns ~/.hermes."""
-        native = tmp_path / ".hermes"
+        """When home is a profile under ~/.eva, returns ~/.eva."""
+        native = tmp_path / ".eva"
         profile = native / "profiles" / "coder"
         profile.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        monkeypatch.delenv("EVA_HOME", raising=False)
         monkeypatch.setenv("HERMES_HOME", str(profile))
         assert get_default_hermes_root() == native
 
     def test_hermes_home_is_docker(self, tmp_path, monkeypatch):
-        """When HERMES_HOME points outside ~/.hermes (Docker), returns HERMES_HOME."""
+        """When home points outside ~/.eva (Docker), returns that path."""
         docker_home = tmp_path / "opt" / "data"
         docker_home.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        monkeypatch.delenv("EVA_HOME", raising=False)
         monkeypatch.setenv("HERMES_HOME", str(docker_home))
         assert get_default_hermes_root() == docker_home
 
     def test_hermes_home_is_custom_path(self, tmp_path, monkeypatch):
-        """Any HERMES_HOME outside ~/.hermes is treated as the root."""
-        custom = tmp_path / "my-hermes-data"
+        """Any home outside ~/.eva is treated as the root."""
+        custom = tmp_path / "my-eva-data"
         custom.mkdir()
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        monkeypatch.delenv("EVA_HOME", raising=False)
         monkeypatch.setenv("HERMES_HOME", str(custom))
         assert get_default_hermes_root() == custom
 
     def test_docker_profile_active(self, tmp_path, monkeypatch):
-        """When a Docker profile is active (HERMES_HOME=<root>/profiles/<name>),
+        """When a Docker profile is active (home=<root>/profiles/<name>),
         returns the Docker root, not the profile dir."""
         docker_root = tmp_path / "opt" / "data"
         profile = docker_root / "profiles" / "coder"
         profile.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        monkeypatch.delenv("EVA_HOME", raising=False)
         monkeypatch.setenv("HERMES_HOME", str(profile))
         assert get_default_hermes_root() == docker_root
 
     def test_no_hermes_home_returns_localappdata_root_on_windows(self, tmp_path, monkeypatch):
-        """Native Windows falls back to %LOCALAPPDATA%\\hermes, not ~/.hermes."""
+        """Native Windows falls back to %LOCALAPPDATA%\\eva, not ~/.eva."""
         local_appdata = tmp_path / "LocalAppData"
+        monkeypatch.delenv("EVA_HOME", raising=False)
         monkeypatch.delenv("HERMES_HOME", raising=False)
         monkeypatch.setenv("LOCALAPPDATA", str(local_appdata))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "Home")
         monkeypatch.setattr(hermes_constants.sys, "platform", "win32")
 
-        assert get_default_hermes_root() == local_appdata / "hermes"
+        assert get_default_hermes_root() == local_appdata / "eva"
 
     def test_no_hermes_home_uses_windows_path_when_localappdata_missing(self, tmp_path, monkeypatch):
-        """Windows fallback still uses AppData/Local/hermes without LOCALAPPDATA."""
+        """Windows fallback still uses AppData/Local/eva without LOCALAPPDATA."""
         home = tmp_path / "Home"
+        monkeypatch.delenv("EVA_HOME", raising=False)
         monkeypatch.delenv("HERMES_HOME", raising=False)
         monkeypatch.delenv("LOCALAPPDATA", raising=False)
         monkeypatch.setattr(Path, "home", lambda: home)
         monkeypatch.setattr(hermes_constants.sys, "platform", "win32")
 
-        assert get_default_hermes_root() == home / "AppData" / "Local" / "hermes"
+        assert get_default_hermes_root() == home / "AppData" / "Local" / "eva"
 
 
 class TestGetHermesHome:
     """Tests for get_hermes_home() platform-aware fallback."""
 
     def test_windows_fallback_uses_localappdata(self, tmp_path, monkeypatch):
-        """When HERMES_HOME is unset on Windows, use %LOCALAPPDATA%\\hermes."""
+        """When EVA_HOME is unset on Windows, use %LOCALAPPDATA%\\eva."""
         local_appdata = tmp_path / "LocalAppData"
+        monkeypatch.delenv("EVA_HOME", raising=False)
         monkeypatch.delenv("HERMES_HOME", raising=False)
         monkeypatch.setenv("LOCALAPPDATA", str(local_appdata))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "Home")
         monkeypatch.setattr(hermes_constants.sys, "platform", "win32")
         monkeypatch.setattr(hermes_constants, "_profile_fallback_warned", False)
 
-        assert get_hermes_home() == local_appdata / "hermes"
+        assert get_hermes_home() == local_appdata / "eva"
+
+    def test_eva_home_preferred_over_hermes_home(self, tmp_path, monkeypatch):
+        """EVA_HOME wins when both EVA_HOME and HERMES_HOME are set."""
+        eva = tmp_path / "eva-home"
+        hermes = tmp_path / "hermes-home"
+        monkeypatch.setenv("EVA_HOME", str(eva))
+        monkeypatch.setenv("HERMES_HOME", str(hermes))
+        assert get_hermes_home() == eva
 
 
 class TestGetProcessHermesHome:
@@ -129,17 +156,21 @@ class TestGetProcessHermesHome:
 
     def test_env_set_returns_that_path(self, tmp_path, monkeypatch):
         home = tmp_path / "launch-home"
+        monkeypatch.delenv("EVA_HOME", raising=False)
         monkeypatch.setenv("HERMES_HOME", str(home))
         assert get_process_hermes_home() == home
 
     def test_env_unset_returns_platform_default(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("EVA_HOME", raising=False)
         monkeypatch.delenv("HERMES_HOME", raising=False)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        assert get_process_hermes_home() == tmp_path / ".hermes"
+        monkeypatch.setattr(hermes_constants.sys, "platform", "linux")
+        assert get_process_hermes_home() == tmp_path / ".eva"
 
     def test_ignores_context_local_override(self, tmp_path, monkeypatch):
         launch_home = tmp_path / "launch-home"
         profile_home = tmp_path / "profiles" / "coder"
+        monkeypatch.delenv("EVA_HOME", raising=False)
         monkeypatch.setenv("HERMES_HOME", str(launch_home))
         token = set_hermes_home_override(profile_home)
         try:
