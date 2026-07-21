@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+"""
+EVA Agent CLI launcher.
+
+This wrapper behaves like the installed `eva` command, including
+subcommands such as `gateway`, `cron`, and `doctor`.
+
+`hermes` remains a compatibility alias pointing at the same entry point.
+"""
+
+if __name__ == "__main__":
+    from hermes_cli.main import main
+    main()

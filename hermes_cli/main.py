@@ -1,46 +1,48 @@
 #!/usr/bin/env python3
 """
-Hermes CLI - Main entry point.
+EVA Agent CLI - Main entry point.
 
 Usage:
-    hermes                     # Interactive chat (default)
-    hermes chat                # Interactive chat
-    hermes gateway             # Run gateway in foreground
-    hermes gateway start       # Start gateway as service
-    hermes gateway stop        # Stop gateway service
-    hermes gateway status      # Show gateway status
-    hermes gateway install     # Install gateway service
-    hermes gateway uninstall   # Uninstall gateway service
-    hermes setup               # Interactive setup wizard
-    hermes logout              # Clear stored authentication
-    hermes status              # Show status of all components
-    hermes cron                # Manage cron jobs
-    hermes cron list           # List cron jobs
-    hermes cron status         # Check if cron scheduler is running
-    hermes doctor              # Check configuration and dependencies
-    hermes honcho setup                    # Configure Honcho AI memory integration
-    hermes honcho status                   # Show Honcho config and connection status
-    hermes honcho sessions                 # List directory → session name mappings
-    hermes honcho map <name>               # Map current directory to a session name
-    hermes honcho peer                     # Show peer names and dialectic settings
-    hermes honcho peer --user NAME         # Set user peer name
-    hermes honcho peer --ai NAME           # Set AI peer name
-    hermes honcho peer --reasoning LEVEL   # Set dialectic reasoning level
-    hermes honcho mode                     # Show current memory mode
-    hermes honcho mode [hybrid|honcho|local]  # Set memory mode
-    hermes honcho tokens                   # Show token budget settings
-    hermes honcho tokens --context N       # Set session.context() token cap
-    hermes honcho tokens --dialectic N     # Set dialectic result char cap
-    hermes honcho identity                 # Show AI peer identity representation
-    hermes honcho identity <file>          # Seed AI peer identity from a file (SOUL.md etc.)
-    hermes honcho migrate                  # Step-by-step migration guide: OpenClaw native → Hermes + Honcho
-    hermes version             Show version
-    hermes update              Update to latest version
-    hermes uninstall           Uninstall Hermes Agent
-    hermes acp                 Run as an ACP server for editor integration
-    hermes sessions browse     Interactive session picker with search
+    eva                     # Interactive chat (default)
+    eva chat                # Interactive chat
+    eva gateway             # Run gateway in foreground
+    eva gateway start       # Start gateway as service
+    eva gateway stop        # Stop gateway service
+    eva gateway status      # Show gateway status
+    eva gateway install     # Install gateway service
+    eva gateway uninstall   # Uninstall gateway service
+    eva setup               # Interactive setup wizard
+    eva logout              # Clear stored authentication
+    eva status              # Show status of all components
+    eva cron                # Manage cron jobs
+    eva cron list           # List cron jobs
+    eva cron status         # Check if cron scheduler is running
+    eva doctor              # Check configuration and dependencies
+    eva honcho setup                    # Configure Honcho AI memory integration
+    eva honcho status                   # Show Honcho config and connection status
+    eva honcho sessions                 # List directory → session name mappings
+    eva honcho map <name>               # Map current directory to a session name
+    eva honcho peer                     # Show peer names and dialectic settings
+    eva honcho peer --user NAME         # Set user peer name
+    eva honcho peer --ai NAME           # Set AI peer name
+    eva honcho peer --reasoning LEVEL   # Set dialectic reasoning level
+    eva honcho mode                     # Show current memory mode
+    eva honcho mode [hybrid|honcho|local]  # Set memory mode
+    eva honcho tokens                   # Show token budget settings
+    eva honcho tokens --context N       # Set session.context() token cap
+    eva honcho tokens --dialectic N     # Set dialectic result char cap
+    eva honcho identity                 # Show AI peer identity representation
+    eva honcho identity <file>          # Seed AI peer identity from a file (SOUL.md etc.)
+    eva honcho migrate                  # Step-by-step migration guide: OpenClaw native → EVA + Honcho
+    eva version             Show version
+    eva update              Update to latest version
+    eva uninstall           Uninstall EVA Agent
+    eva acp                 Run as an ACP server for editor integration
+    eva sessions browse     Interactive session picker with search
 
-    hermes claw migrate --dry-run  # Preview migration without changes
+    eva claw migrate --dry-run  # Preview migration without changes
+
+    hermes                  # Compatibility alias for eva
 """
 
 # IMPORTANT: hermes_bootstrap must be the very first import — it sets up
@@ -184,25 +186,41 @@ def _run_and_exit_oneshot(
         _exit_after_oneshot(rc)
 
 
+def _cli_process_name() -> str:
+    """Return the user-facing CLI process name (``eva`` or ``hermes`` alias)."""
+    try:
+        inv = os.path.basename(sys.argv[0] if sys.argv else "eva").lower()
+        if inv.endswith(".exe"):
+            inv = inv[:-4]
+        elif inv.endswith(".py"):
+            inv = inv[:-3]
+    except Exception:
+        inv = "eva"
+    if inv.startswith("hermes"):
+        return "hermes"
+    return "eva"
+
+
 def _set_process_title() -> None:
-    """Set the process title to 'hermes' so tools like 'ps', 'top', and
+    """Set the process title so tools like 'ps', 'top', and
     'htop' show the app name instead of 'python3.xx'.
 
     Purely cosmetic — non-fatal on any platform.
 
     Strategy (try in order):
-      1. ``setproctitle`` (opt-in dep — installed via ``hermes tools`` or
+      1. ``setproctitle`` (opt-in dep — installed via ``eva tools`` or
          ``pip install setproctitle``, or bundled in a future release).
       2. ctypes ``prctl(PR_SET_NAME)`` (Linux only, 15-char limit).
       3. ctypes ``pthread_setname_np`` (macOS only, kernel thread name —
          changes lldb/top but not ``ps aux``).
-      4. No-op on Windows (the .exe name is already ``hermes.exe``).
+      4. No-op on Windows (the .exe name is already ``eva.exe`` / ``hermes.exe``).
     """
+    title = _cli_process_name()
     # Strategy 1: setproctitle (best — works on macOS, Linux, BSD)
     try:
         import setproctitle  # type: ignore[import-untyped]
 
-        setproctitle.setproctitle("hermes")
+        setproctitle.setproctitle(title)
         return
     except ImportError:
         pass
@@ -215,11 +233,11 @@ def _set_process_title() -> None:
         system = platform.system()
         if system == "Linux":
             libc = ctypes.CDLL("libc.so.6", use_errno=True)
-            libc.prctl(15, b"hermes", 0, 0, 0)  # PR_SET_NAME = 15
+            libc.prctl(15, title.encode("ascii", "ignore")[:15], 0, 0, 0)  # PR_SET_NAME = 15
         elif system == "Darwin":
             libc = ctypes.CDLL("libc.dylib", use_errno=True)
-            libc.pthread_setname_np(b"hermes")
-        # Windows: the .exe name is already ``hermes.exe`` — nothing to do.
+            libc.pthread_setname_np(title.encode("ascii", "ignore")[:63])
+        # Windows: the .exe name is already ``eva.exe`` / ``hermes.exe`` — nothing to do.
     except Exception:
         pass
 
@@ -363,7 +381,7 @@ def _read_openai_version_fast() -> str | None:
 def _print_fast_version_info() -> None:
     from hermes_cli import __release_date__, __version__
 
-    print(f"Hermes Agent v{__version__} ({__release_date__})")
+    print(f"EVA Agent v{__version__} ({__release_date__})")
     print(f"Install directory: {PROJECT_ROOT}")
 
     print(f"Python: {sys.version.split()[0]}")
@@ -2860,14 +2878,14 @@ def cmd_whatsapp(args):
             print("    2. Send a message to the bot's WhatsApp number")
             print("    3. The agent will reply automatically")
             print()
-            print("  Tip: Agent responses are prefixed with '⚕ Hermes Agent'")
+            print("  Tip: Agent responses are prefixed with '⚕ EVA Agent'")
         else:
             print("  Next steps:")
             print("    1. Start the gateway:  hermes gateway")
             print("    2. Open WhatsApp → Message Yourself")
             print("    3. Type a message — the agent will reply")
             print()
-            print("  Tip: Agent responses are prefixed with '⚕ Hermes Agent'")
+            print("  Tip: Agent responses are prefixed with '⚕ EVA Agent'")
             print("  so you can tell them apart from your own messages.")
         print()
         print("  Or install as a service: hermes gateway install")
@@ -4626,7 +4644,7 @@ def cmd_version(args):
 
 
 def cmd_uninstall(args):
-    """Uninstall Hermes Agent (or just the Chat GUI with --gui)."""
+    """Uninstall EVA Agent (or just the Chat GUI with --gui)."""
     # Machine-readable install snapshot for the desktop app's uninstall UI.
     # Must run before any TTY gate — it's called from a non-interactive child.
     if getattr(args, "gui_summary", False):
@@ -6468,7 +6486,7 @@ def _atomic_replace_dir(src: str, dst: str) -> None:
 
 
 def _update_via_zip(args):
-    """Update Hermes Agent by downloading a ZIP archive.
+    """Update EVA Agent by downloading a ZIP archive.
 
     Used on Windows when git file I/O is broken (antivirus, NTFS filter
     drivers causing 'Invalid argument' errors on file creation).
@@ -7485,7 +7503,10 @@ def _hermes_exe_shims(scripts_dir: Path) -> list[Path]:
     if not _is_windows():
         return []
 
-    names = set(_load_console_script_names()) or {"hermes", "hermes-agent", "hermes-acp"}
+    names = set(_load_console_script_names()) or {
+        "eva", "eva-agent", "eva-acp",
+        "hermes", "hermes-agent", "hermes-acp",
+    }
     # The gateway shim is not a [project.scripts] entry point, but older
     # update/install paths still rewrite and quarantine it.
     names.add("hermes-gateway")
@@ -9065,7 +9086,7 @@ def _ensure_fhs_path_guard() -> None:
 
     path_line = 'export PATH="/usr/local/bin:$PATH"'
     path_comment = (
-        "# Hermes Agent — ensure /usr/local/bin is on PATH " "(RHEL non-login shells)"
+        "# EVA Agent — ensure /usr/local/bin is on PATH " "(RHEL non-login shells)"
     )
     wrote_any = False
     for candidate in (".bashrc", ".bash_profile"):
@@ -9799,7 +9820,7 @@ def _discard_lockfile_churn(git_cmd, repo_root):
 
 
 def cmd_update(args):
-    """Update Hermes Agent to the latest version.
+    """Update EVA Agent to the latest version.
 
     Thin wrapper around ``_cmd_update_impl``: installs hangup protection,
     runs the update, then restores stdio on the way out (even on
@@ -9824,7 +9845,7 @@ def cmd_update(args):
         print(f"⚠ {format_unsupported_install_warning(_install_method_for_warning)}")
 
     if is_managed():
-        managed_error("update Hermes Agent")
+        managed_error("update EVA Agent")
         return
 
     # Docker users can't ``git pull`` — the image excludes ``.git`` from
@@ -9917,7 +9938,7 @@ def _cmd_update_pip(args):
         print("✗ Update failed")
         sys.exit(1)
 
-    print("✓ Update complete! Restart hermes to use the new version.")
+    print("✓ Update complete! Restart eva to use the new version.")
 
 
 def _cmd_update_impl(args, gateway_mode: bool):
@@ -9955,7 +9976,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
             logger.debug("Could not read updates.non_interactive_local_changes: %s", exc)
             discard_local_changes = False
 
-    print("⚕ Updating Hermes Agent...")
+    print("⚕ Updating EVA Agent...")
     print()
 
     # On Windows, abort early if another hermes.exe is holding the venv shim
@@ -13251,7 +13272,7 @@ def cmd_memory(args):
 
 
 def cmd_acp(args):
-    """Launch Hermes Agent as an ACP server."""
+    """Launch EVA Agent as an ACP server."""
     try:
         from acp_adapter.entry import main as acp_main
 
@@ -13342,8 +13363,8 @@ def cmd_claw(args):
 
 
 def main():
-    """Main entry point for hermes CLI."""
-    # Cosmetic: make the process show up as 'hermes' instead of 'python3.11'
+    """Main entry point for eva CLI (hermes remains a compatibility alias)."""
+    # Cosmetic: make the process show up as 'eva'/'hermes' instead of 'python3.11'
     # in ps/top/htop.  Non-fatal — just a nicer UX.
     _set_process_title()
 

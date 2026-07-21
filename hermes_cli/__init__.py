@@ -1,14 +1,17 @@
 """
-Hermes CLI - Unified command-line interface for Hermes Agent.
+EVA Agent CLI - Unified command-line interface.
+
+Python package remains ``hermes_cli`` for import stability; the user-facing
+command is ``eva`` (``hermes`` is a compatibility alias).
 
 Provides subcommands for:
-- hermes chat          - Interactive chat (same as ./hermes)
-- hermes gateway       - Run gateway in foreground
-- hermes gateway start - Start gateway service
-- hermes gateway stop  - Stop gateway service
-- hermes setup         - Interactive setup wizard
-- hermes status        - Show status of all components
-- hermes cron          - Manage cron jobs
+- eva chat          - Interactive chat (same as ./eva)
+- eva gateway       - Run gateway in foreground
+- eva gateway start - Start gateway service
+- eva gateway stop  - Stop gateway service
+- eva setup         - Interactive setup wizard
+- eva status        - Show status of all components
+- eva cron          - Manage cron jobs
 """
 
 import os
