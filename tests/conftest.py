@@ -195,6 +195,7 @@ _HERMES_BEHAVIORAL_VARS = frozenset({
     "HERMES_CONTAINER",
     "HERMES_EPHEMERAL_SYSTEM_PROMPT",
     "HERMES_TIMEZONE",
+    "EVA_TIMEZONE",  # EVA canonical; HERMES_TIMEZONE is compat alias
     "HERMES_REDACT_SECRETS",
     "HERMES_BACKGROUND_NOTIFICATIONS",
     "HERMES_EXEC_ASK",
@@ -202,7 +203,7 @@ _HERMES_BEHAVIORAL_VARS = frozenset({
     "HERMES_AGENT_USE_LEGACY_SESSION_KEYS",
     # Kanban path/board pins must never leak from a developer shell or
     # dispatched worker into tests; otherwise tests can write fake tasks to
-    # the real ~/.hermes/kanban.db instead of the per-test HERMES_HOME.
+    # the real agent home kanban.db instead of the per-test EVA_HOME.
     "HERMES_KANBAN_DB",
     "HERMES_KANBAN_BOARD",
     "HERMES_KANBAN_HOME",
@@ -353,22 +354,27 @@ def _hermetic_environment(tmp_path, monkeypatch):
     # custom host resolution override/delete this explicitly.
     monkeypatch.setenv("HERMES_HONCHO_HOST", "hermes")
 
-    # 3. Redirect HERMES_HOME to a per-test tempdir. Code that reads
-    #    ``~/.hermes/*`` via ``get_hermes_home()`` now gets the tempdir.
+    # 3. Redirect agent home to a per-test tempdir. Code that reads
+    #    home paths via ``get_hermes_home()`` now gets the tempdir.
+    #    Production prefers EVA_HOME over HERMES_HOME; for hermetic tests
+    #    we CLEAR EVA_HOME (so a developer shell cannot pin the suite) and
+    #    set HERMES_HOME only. Existing tests that monkeypatch HERMES_HOME
+    #    keep working without also touching EVA_HOME.
     #
     #    NOTE: We do NOT also redirect HOME. Doing so broke CI because
     #    some tests (and their transitive deps) spawn subprocesses that
     #    inherit HOME and expect it to be stable. If a test genuinely
     #    needs HOME isolated, it should set it explicitly in its own
-    #    fixture. Any code in the codebase reading ``~/.hermes/*`` via
-    #    ``Path.home() / ".hermes"`` instead of ``get_hermes_home()``
-    #    is a bug to fix at the callsite.
+    #    fixture. Any code in the codebase reading agent home via
+    #    ``Path.home() / ".eva"`` / ``".hermes"`` instead of
+    #    ``get_hermes_home()`` is a bug to fix at the callsite.
     fake_hermes_home = tmp_path / "hermes_test"
     fake_hermes_home.mkdir()
     (fake_hermes_home / "sessions").mkdir()
     (fake_hermes_home / "cron").mkdir()
     (fake_hermes_home / "memories").mkdir()
     (fake_hermes_home / "skills").mkdir()
+    monkeypatch.delenv("EVA_HOME", raising=False)
     monkeypatch.setenv("HERMES_HOME", str(fake_hermes_home))
 
     # 4. Deterministic locale / timezone / hashseed. CI runs in UTC with

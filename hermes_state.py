@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """
-SQLite State Store for Hermes Agent.
+SQLite State Store for EVA Agent (Hermes fork).
 
 Provides persistent session storage with FTS5 full-text search, replacing
 the per-session JSONL file approach. Stores session metadata, full message
 history, and model configuration for CLI and gateway sessions.
+
+Database path is profile-aware via ``get_hermes_home()`` (``state.db`` under
+``EVA_HOME`` / default ``~/.eva`` or ``%LOCALAPPDATA%\\eva``).
 
 Key design decisions:
 - WAL mode for concurrent readers + one writer (gateway multi-platform)
