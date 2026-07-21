@@ -101,13 +101,20 @@ TELEGRAM_ALLOWED_USERS=REPLACE_WITH_YOUR_NUMERIC_USER_ID
 ### 5. Subir e testar
 
 ```powershell
-# Primeiro teste: foreground (Ctrl+C para parar)
+# Atalho recomendado (checa token no .env local + background + doctor):
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start-gateway.ps1
+
+# Alternativa: primeiro teste em foreground (Ctrl+C para parar)
 eva gateway run
 
-# Em outro terminal / depois de validar:
-eva gateway install   # auto-start no login
+# Serviço no login + start:
+eva gateway install
 eva gateway start
 eva gateway status
+
+# Parar:
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\stop-gateway.ps1
+# ou: eva gateway stop
 ```
 
 No Telegram, abra o bot e envie uma mensagem. Se a allowlist estiver certa, a EVA responde.
@@ -162,6 +169,39 @@ SDKs de messaging: no Windows o install/bootstrap costuma instalar deps se a var
 
 ---
 
+## Scripts de atalho no repo (recomendado no Windows)
+
+Atalhos PowerShell que **não exigem token no git**. Secrets só em `%LOCALAPPDATA%\eva\.env`.
+
+| Script | Função |
+|--------|--------|
+| `scripts/start-gateway.ps1` | Checa `TELEGRAM_BOT_TOKEN` no `.env` local; doctor (`eva gateway status`); sobe em background |
+| `scripts/stop-gateway.ps1` | Doctor + `eva gateway stop` |
+
+```powershell
+# Subir (background). Se faltar token, imprime o que colar e sai com código 1.
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start-gateway.ps1
+
+# Só status / doctor
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start-gateway.ps1 -StatusOnly
+
+# Registrar auto-start no login + start (não-interativo)
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start-gateway.ps1 -Install
+
+# Parar
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\stop-gateway.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\stop-gateway.ps1 -StatusAfter
+```
+
+Comportamento do **start**:
+
+1. Resolve home: `$env:EVA_HOME` / `$env:HERMES_HOME` / `%LOCALAPPDATA%\eva`
+2. Lê **só** o `.env` local — se `TELEGRAM_BOT_TOKEN` faltar ou for placeholder, mostra instrução clara (BotFather + user id) e **não** sobe
+3. Localiza CLI (`eva` no PATH, install gerenciado, ou `.venv` do repo)
+4. Roda `eva gateway status` (doctor)
+5. Prefere `eva gateway start`; se precisar, fallback `Start-Process` Hidden → `eva gateway run`
+6. **Nunca** grava token no repositório
+
 ## Serviço Windows (login + restart)
 
 ```powershell
@@ -188,6 +228,8 @@ eva gateway uninstall    # remove task + startup entry
 - [x] Paths `%LOCALAPPDATA%\eva`  
 - [x] Pairing CLI (`eva pairing`)  
 - [x] Install como Scheduled Task / Startup  
+- [x] Scripts `scripts/start-gateway.ps1` + `scripts/stop-gateway.ps1` (token gate + background)  
+
 
 ### ⏳ Só você (humano / UI)
 
@@ -227,6 +269,8 @@ Cole os valores no `%LOCALAPPDATA%\eva\.env` ou no wizard — **nunca** no git.
 
 | Artefato | Path |
 |----------|------|
+| Start background (PS1) | [../scripts/start-gateway.ps1](../scripts/start-gateway.ps1) |
+| Stop gateway (PS1) | [../scripts/stop-gateway.ps1](../scripts/stop-gateway.ps1) |
 | Template env (placeholders) | [docs/gateway.env.example](./gateway.env.example) |
 | Install Windows | [docs/install-windows.md](./install-windows.md) |
 | `.env.example` completo (raiz) | [../.env.example](../.env.example) |
