@@ -1890,7 +1890,8 @@ class TestGatewaySystemServiceRouting:
 
         out = capsys.readouterr().out
         assert "Gateway is not running" in out
-        assert "nohup hermes gateway" in out
+        # User-facing CLI brand is eva; hermes remains a compatibility alias.
+        assert "nohup eva gateway" in out or "nohup hermes gateway" in out
         assert "install as user service" not in out
 
     def test_gateway_restart_does_not_fallback_to_foreground_when_launchd_restart_fails(self, tmp_path, monkeypatch):
