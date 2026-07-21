@@ -14,6 +14,7 @@ from collections import OrderedDict
 from pathlib import Path
 
 from hermes_constants import get_hermes_home, get_skills_dir, is_wsl
+from hermes_cli.default_soul import DEFAULT_SOUL_MD as DEFAULT_AGENT_IDENTITY
 from typing import Optional
 
 from agent.runtime_cwd import resolve_agent_cwd
@@ -135,16 +136,7 @@ def _strip_yaml_frontmatter(content: str) -> str:
 # =========================================================================
 # Constants
 # =========================================================================
-
-DEFAULT_AGENT_IDENTITY = (
-    "You are Hermes Agent, an intelligent AI assistant created by Nous Research. "
-    "You are helpful, knowledgeable, and direct. You assist users with a wide "
-    "range of tasks including answering questions, writing and editing code, "
-    "analyzing information, creative work, and executing actions via your tools. "
-    "You communicate clearly, admit uncertainty when appropriate, and prioritize "
-    "being genuinely useful over being verbose unless otherwise directed below. "
-    "Be targeted and efficient in your exploration and investigations."
-)
+# DEFAULT_AGENT_IDENTITY is imported from hermes_cli.default_soul (DEFAULT_SOUL_MD).
 
 HERMES_AGENT_HELP_GUIDANCE = (
     "You run on Hermes Agent (by Nous Research). When the user needs help with "

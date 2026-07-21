@@ -1,17 +1,19 @@
 ---
 sidebar_position: 9
 title: "Personality & SOUL.md"
-description: "Customize Hermes Agent's personality with a global SOUL.md, built-in personalities, and custom persona definitions"
+description: "Customize EVA's personality with a global SOUL.md, built-in personalities, and custom persona definitions"
 ---
 
 # Personality & SOUL.md
 
-Hermes Agent's personality is fully customizable. `SOUL.md` is the **primary identity** — it's the first thing in the system prompt and defines who the agent is.
+The agent's personality is fully customizable. `SOUL.md` is the **primary identity** — it's the first thing in the system prompt and defines who the agent is.
+
+**Default personality: EVA** — warm, gentle, professional, lightly witty tech lead; Portuguese when you write in Portuguese. New installs seed this into `SOUL.md` and as the built-in `/personality eva` preset.
 
 - `SOUL.md` — a durable persona file that lives in `HERMES_HOME` and serves as the agent's identity (slot #1 in the system prompt)
 - built-in or custom `/personality` presets — session-level system-prompt overlays
 
-If you want to change who Hermes is — or replace it with an entirely different agent persona — edit `SOUL.md`.
+If you want to change who the agent is — or replace EVA with an entirely different persona — edit `SOUL.md`, or switch temporarily with `/personality`.
 
 ## How SOUL.md works now
 
@@ -124,7 +126,7 @@ The content goes through:
 - prompt-injection scanning
 - truncation if it is too large
 
-If the file is empty, whitespace-only, or cannot be read, Hermes falls back to a built-in default identity ("You are Hermes Agent, an intelligent AI assistant created by Nous Research..."). This fallback also applies when `skip_context_files` is set (e.g., in subagent/delegation contexts).
+If the file is empty, whitespace-only, or cannot be read, the agent falls back to the built-in EVA default identity ("You are EVA — a personal AI tech lead and collaborator..."). This fallback also applies when `skip_context_files` is set (e.g., in subagent/delegation contexts).
 
 ## Security scanning
 
@@ -172,10 +174,11 @@ Examples:
 
 ## Built-in personalities
 
-Hermes ships with built-in personalities you can switch to with `/personality`.
+Built-in personalities you can switch to with `/personality`:
 
 | Name | Description |
 |------|-------------|
+| **eva** | **Default** — warm tech lead; PT when you speak PT; not a generic AI |
 | **helpful** | Friendly, general-purpose assistant |
 | **concise** | Brief, to-the-point responses |
 | **technical** | Detailed, accurate technical expert |
@@ -196,18 +199,21 @@ Hermes ships with built-in personalities you can switch to with `/personality`.
 ### CLI
 
 ```text
-/personality
-/personality concise
+/personality              # list presets
+/personality concise      # temporary overlay
 /personality technical
+/personality eva          # restore EVA voice overlay
+/personality none         # clear overlay — use SOUL.md only (EVA by default)
 ```
 
 ### Messaging platforms
 
 ```text
 /personality teacher
+/personality eva
 ```
 
-These are convenient overlays, but your global `SOUL.md` still gives Hermes its persistent default personality unless the overlay meaningfully changes it.
+These are convenient overlays. Your global `SOUL.md` still gives the agent its persistent default (EVA on a fresh install) unless you edit that file or apply an overlay that changes the voice.
 
 ## Custom personalities in config
 
@@ -231,12 +237,12 @@ Then switch to it with:
 
 A strong default setup is:
 
-1. Keep a thoughtful global `SOUL.md` in `~/.hermes/SOUL.md`
+1. Keep the seeded EVA `SOUL.md` (or edit it) in your `HERMES_HOME` (e.g. `~/.hermes/SOUL.md` or `%LOCALAPPDATA%\eva\SOUL.md`)
 2. Put project instructions in `AGENTS.md`
-3. Use `/personality` only when you want a temporary mode shift
+3. Use `/personality` only when you want a temporary mode shift (`/personality eva` or `/personality none` to return to baseline)
 
 That gives you:
-- a stable voice
+- a stable EVA voice
 - project-specific behavior where it belongs
 - temporary control when needed
 
