@@ -48,7 +48,7 @@ def _get_platform_default_hermes_home() -> Path:
     if sys.platform == "win32":
         local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
         base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
-        return base / "hermes"
+        return base / "eva"
     return Path.home() / ".hermes"
 
 
@@ -155,7 +155,7 @@ def get_default_hermes_root() -> Path:
     """Return the root Hermes directory for profile-level operations.
 
     In standard deployments this is the platform-native Hermes home
-    (``~/.hermes`` on POSIX, ``%LOCALAPPDATA%\\hermes`` on native Windows).
+    (``~/.hermes`` on POSIX, ``%LOCALAPPDATA%\\eva`` on native Windows).
 
     In Docker or custom deployments where ``HERMES_HOME`` points outside
     ``~/.hermes`` (e.g. ``/opt/data``), returns ``HERMES_HOME`` directly
@@ -298,7 +298,7 @@ def iter_hermes_node_dirs(home: Path | None = None) -> list[Path]:
     """Return Hermes-managed Node.js directories in preferred lookup order.
 
     Windows installs from ``scripts/install.ps1`` unpack portable Node directly
-    into ``%LOCALAPPDATA%\\hermes\\node``. POSIX installs use
+    into ``%LOCALAPPDATA%\\eva\\node``. POSIX installs use
     ``$HERMES_HOME/node/bin``. Include both shapes on every platform so mixed
     or migrated installs still work.
     """

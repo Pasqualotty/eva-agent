@@ -9,6 +9,14 @@ FROM ghcr.io/astral-sh/uv:0.11.6-python3.13-trixie@sha256:b3c543b6c4f23a5f2df228
 FROM node:22-bookworm-slim@sha256:7af03b14a13c8cdd38e45058fd957bf00a72bbe17feac43b1c15a689c029c732 AS node_source
 FROM debian:13.4
 
+# OCI labels — EVA brand, Hermes/Nous provenance (MIT).
+LABEL org.opencontainers.image.title="EVA Agent" \
+      org.opencontainers.image.description="EVA Agent — full Hermes Agent features under the EVA brand (fork of Nous Research hermes-agent)." \
+      org.opencontainers.image.source="https://github.com/Pasqualotty/eva-agent" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.vendor="EVA (based on Nous Research Hermes Agent)" \
+      org.opencontainers.image.url="https://github.com/Pasqualotty/eva-agent"
+
 # Disable Python stdout buffering to ensure logs are printed immediately.
 # Do not write .pyc files at runtime: /opt/hermes is immutable in the
 # published container and writable state belongs under /opt/data.

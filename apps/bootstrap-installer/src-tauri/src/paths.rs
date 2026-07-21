@@ -1,7 +1,7 @@
 //! Filesystem paths + logging setup.
 //!
 //! Mirrors `hermes_constants.get_hermes_home()` from the Python CLI:
-//!   Windows: %LOCALAPPDATA%\hermes
+//!   Windows: %LOCALAPPDATA%\eva
 //!   macOS:   ~/.hermes
 //!   Linux:   ~/.hermes  (override via $HERMES_HOME)
 //!
@@ -31,9 +31,9 @@ pub fn hermes_home() -> PathBuf {
 
     #[cfg(target_os = "windows")]
     {
-        // %LOCALAPPDATA%\hermes — matches scripts/install.ps1's $HermesHome.
+        // %LOCALAPPDATA%\eva — matches scripts/install.ps1's $HermesHome.
         if let Some(local_app_data) = dirs::data_local_dir() {
-            return local_app_data.join("hermes");
+            return local_app_data.join("eva");
         }
     }
 
@@ -66,7 +66,7 @@ pub fn bootstrap_cache_dir() -> PathBuf {
 /// HERMES_HOME so it survives repo checkout deletion (unlike anything under
 /// hermes-agent/).
 ///
-/// On Windows this is `%LOCALAPPDATA%\hermes\hermes-setup.exe`; on other
+/// On Windows this is `%LOCALAPPDATA%\eva\hermes-setup.exe`; on other
 /// platforms the extension differs but the directory is the same.
 pub fn installer_dest() -> PathBuf {
     let name = if cfg!(target_os = "windows") {
