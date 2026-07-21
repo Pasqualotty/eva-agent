@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EVA Agent — Tutorial completo</title>
+  <style>
+    :root {
+      --bg: #0c0f14;
+      --bg2: #141a22;
+      --panel: #1a222d;
+      --line: #2a3544;
+      --text: #e8eef6;
+      --muted: #8b9bb0;
+      --accent: #6ee7b7;
+      --accent2: #38bdf8;
+      --warn: #fbbf24;
+      --danger: #f87171;
+      --code-bg: #0a0e13;
+      --radius: 12px;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", "Courier New", monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: radial-gradient(1200px 600px at 10% -10%, #1a2a3a 0%, transparent 50%),
+                  radial-gradient(900px 500px at 100% 0%, #132a24 0%, transparent 45%),
+                  var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 16px;
+    }
+    a { color: var(--accent2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+    }
+    nav {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      background: rgba(12, 15, 20, 0.92);
+      border-right: 1px solid var(--line);
+      padding: 1.25rem 1rem 2rem;
+      backdrop-filter: blur(8px);
+    }
+    nav .brand {
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      font-size: 0.95rem;
+      margin-bottom: 0.25rem;
+    }
+    nav .sub {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-bottom: 1.25rem;
+    }
+    nav a {
+      display: block;
+      color: var(--muted);
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      margin-bottom: 0.15rem;
+    }
+    nav a:hover { background: var(--panel); color: var(--text); text-decoration: none; }
+    nav a.section {
+      color: var(--text);
+      font-weight: 600;
+      margin-top: 0.85rem;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    main {
+      max-width: 820px;
+      padding: 2.5rem 2rem 4rem;
+      margin: 0 auto;
+      width: 100%;
+    }
+    h1 {
+      font-size: 2rem;
+      line-height: 1.2;
+      margin: 0 0 0.5rem;
+      letter-spacing: -0.02em;
+    }
+    h1 span { color: var(--accent); }
+    .lede {
+      color: var(--muted);
+      font-size: 1.05rem;
+      margin-bottom: 2rem;
+    }
+    h2 {
+      font-size: 1.35rem;
+      margin: 2.5rem 0 0.75rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--line);
+      color: var(--text);
+    }
+    h2:first-of-type { border-top: 0; padding-top: 0; }
+    h3 {
+      font-size: 1.05rem;
+      margin: 1.5rem 0 0.5rem;
+      color: var(--accent2);
+    }
+    p, li { color: #d0dae6; }
+    ul, ol { padding-left: 1.25rem; }
+    li { margin: 0.35rem 0; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1rem 1.15rem;
+      margin: 1rem 0;
+    }
+    .card.ok { border-color: #2d5a48; background: #12201a; }
+    .card.warn { border-color: #5a4a1e; background: #1f1a10; }
+    .card.danger { border-color: #5a2a2a; background: #1f1212; }
+    .card strong { color: var(--text); }
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      nav { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+      .grid2 { grid-template-columns: 1fr; }
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+      margin: 1rem 0;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 0.55rem 0.7rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--bg2); color: var(--accent); font-weight: 600; }
+    td { background: rgba(26, 34, 45, 0.5); }
+    code, kbd {
+      font-family: var(--mono);
+      font-size: 0.86em;
+      background: var(--code-bg);
+      padding: 0.12em 0.4em;
+      border-radius: 4px;
+      border: 1px solid var(--line);
+    }
+    kbd { border-bottom-width: 2px; }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.5;
+      margin: 0.75rem 0 1.25rem;
+    }
+    pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+    .step {
+      display: flex;
+      gap: 0.85rem;
+      margin: 1rem 0;
+      align-items: flex-start;
+    }
+    .step .n {
+      flex: 0 0 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2dd4a0, #0ea5e9);
+      color: #041018;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+    }
+    .step .body { flex: 1; }
+    .badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      background: #1e3a2f;
+      color: var(--accent);
+      border: 1px solid #2d5a48;
+      vertical-align: middle;
+      margin-left: 0.35rem;
+    }
+    .badge.desk { background: #1a2a3a; color: var(--accent2); border-color: #2a4a5a; }
+    footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .toc-mobile { display: none; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav>
+      <div class="brand">EVA AGENT</div>
+      <div class="sub">Tutorial completo · Windows</div>
+      <a class="section" href="#inicio">Início</a>
+      <a href="#o-que-e">O que é a EVA</a>
+      <a href="#mapa">Mapa mental</a>
+      <a href="#requisitos">Requisitos</a>
+      <a class="section" href="#instalar">Instalar</a>
+      <a href="#bootstrap">Bootstrap (dev)</a>
+      <a href="#path">PATH permanente</a>
+      <a href="#setup">Setup do modelo</a>
+      <a class="section" href="#cli">Usar no terminal</a>
+      <a href="#comandos">Comandos essenciais</a>
+      <a href="#skills">Skills e memória</a>
+      <a href="#tools">Tools e permissões</a>
+      <a class="section" href="#desk">EVA no desktop</a>
+      <a href="#tray">Bandeja e residente</a>
+      <a href="#voz">Voz e PTT</a>
+      <a href="#brain">Cérebros /ping</a>
+      <a class="section" href="#telegram">Telegram</a>
+      <a href="#gateway">Ligar o gateway</a>
+      <a href="#pairing">Primeira mensagem</a>
+      <a class="section" href="#diaadia">Dia a dia</a>
+      <a href="#fluxos">Fluxos recomendados</a>
+      <a href="#problemas">Problemas comuns</a>
+      <a href="#checklist">Checklist final</a>
+    </nav>
+
+    <main>
+      <h1>Como usar a <span>EVA Agent</span> por completo</h1>
+      <p class="lede">
+        Guia prático para Windows: instalar, conversar no terminal, deixar o Desk na bandeja,
+        voz, Telegram e o que cada peça faz. Sem enrolação.
+      </p>
+
+      <div class="card ok">
+        <strong>Onde está o software</strong>
+        <ul>
+          <li><strong>Core (agente de verdade):</strong> <code>C:\Users\mathe\Documents\eva-agent</code> · GitHub <code>Pasqualotty/eva-agent</code></li>
+          <li><strong>Desk (bandeja / voz / UI):</strong> <code>C:\Users\mathe\Documents\evagent</code> · GitHub <code>Pasqualotty/evagent</code></li>
+          <li><strong>Dados e secrets:</strong> <code>%LOCALAPPDATA%\eva</code> (config, <code>.env</code>, logs, sessões)</li>
+        </ul>
+      </div>
+
+      <h2 id="o-que-e">1. O que é a EVA</h2>
+      <p>
+        A EVA é o <strong>seu agente pessoal</strong>: conversa, usa tools (terminal, arquivos, web, browser…),
+        tem skills, memória entre sessões, cron e gateway de mensagens. O motor é um fork completo do
+        Hermes Agent (Nous Research), rebrandizado e configurado pra você.
+      </p>
+      <div class="grid2">
+        <div class="card">
+          <strong>EVA Agent (core)</strong>
+          <p style="margin:0.4rem 0 0;color:var(--muted);font-size:0.92rem">
+            CLI <code>eva</code>: cérebro + tools + skills + gateway Telegram/Discord/etc.
+            É o “agente de verdade”.
+          </p>
+        </div>
+        <div class="card">
+          <strong>EVA Desk</strong>
+          <p style="margin:0.4rem 0 0;color:var(--muted);font-size:0.92rem">
+            App Windows: bandeja, hotkey PTT, voz Eva Humana (Voicebox), painel de chat.
+            Pode falar com o core via <code>/ping</code> e brain <code>eva-core</code>.
+          </p>
+        </div>
+      </div>
+
+      <h2 id="mapa">2. Mapa mental</h2>
+<pre><code>Você
+ ├── Terminal:  eva / eva setup / eva gateway
+ ├── Telegram:   @seu_bot  ← gateway (processo em background)
+ └── Desk:      bandeja + PTT + chat  →  (opcional) CLI eva
+                      │
+                      ▼
+              %LOCALAPPDATA%\eva
+              (.env, config, logs, sessions, memories)</code></pre>
+
+      <h2 id="requisitos">3. Requisitos</h2>
+      <ul>
+        <li>Windows 10/11</li>
+        <li>Python 3.11–3.13 (recomendado 3.11)</li>
+        <li>Git</li>
+        <li>Chave de modelo (xAI/Grok, OpenAI, Anthropic, OpenRouter, etc.) — via <code>eva setup</code> ou <code>.env</code></li>
+        <li><strong>Opcional Desk:</strong> Voicebox instalado + perfil <strong>Eva Humana</strong></li>
+        <li><strong>Opcional Telegram:</strong> bot criado no @BotFather</li>
+      </ul>
+
+      <!-- INSTALAR -->
+      <h2 id="instalar">4. Instalar o core</h2>
+
+      <h3 id="bootstrap">4.1 Caminho rápido (desenvolvimento)</h3>
+      <div class="step">
+        <div class="n">1</div>
+        <div class="body">
+          Abra PowerShell e rode:
+<pre><code>cd C:\Users\mathe\Documents\eva-agent
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap_dev.ps1</code></pre>
+          Isso cria <code>.venv</code>, instala o pacote editável e testa <code>eva --help</code>.
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">2</div>
+        <div class="body">
+          Ative o ambiente e entre no agente:
+<pre><code>.\.venv\Scripts\Activate.ps1
+eva --help
+eva setup
+eva</code></pre>
+          Sem ativar o venv:
+<pre><code>.\.venv\Scripts\eva.exe
+.\.venv\Scripts\python.exe -m hermes_cli.main --help</code></pre>
+        </div>
+      </div>
+
+      <h3 id="path">4.2 PATH permanente (recomendado no dia a dia)</h3>
+      <p>Para digitar <code>eva</code> em qualquer terminal novo:</p>
+<pre><code>cd C:\Users\mathe\Documents\eva-agent
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-user-path.ps1</code></pre>
+      <div class="card warn">
+        <strong>Atenção:</strong> feche e abra o terminal (ou faça logoff) para o PATH novo valer.
+        Use <code>-DryRun</code> se quiser só simular.
+      </div>
+      <p>Documentação detalhada: <code>docs\install-windows.md</code>.</p>
+
+      <h3 id="setup">4.3 Configurar o modelo (API)</h3>
+      <ol>
+        <li>Rode <code>eva setup</code> e escolha o provider (xAI/Grok, OpenAI, Anthropic, OpenRouter…).</li>
+        <li>Ou edite manualmente <code>%LOCALAPPDATA%\eva\.env</code> (nunca commite este arquivo).</li>
+        <li>Teste: <code>eva</code> e mande “oi”.</li>
+      </ol>
+<pre><code># Exemplo de chaves (use só as que você tiver)
+# %LOCALAPPDATA%\eva\.env
+EVA_HOME=C:\Users\mathe\AppData\Local\eva
+XAI_API_KEY=...
+OPENAI_API_KEY=...
+ANTHROPIC_API_KEY=...
+TELEGRAM_BOT_TOKEN=...   # só se for usar gateway</code></pre>
+
+      <!-- CLI -->
+      <h2 id="cli">5. Usar no terminal (core)</h2>
+      <p>
+        O modo principal de “agente completo” é a CLI interativa. É aqui que skills, tools,
+        memória e multi-passo brilham.
+      </p>
+
+      <h3 id="comandos">5.1 Comandos essenciais</h3>
+      <table>
+        <thead>
+          <tr><th>Comando</th><th>O que faz</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>eva</code></td><td>Abre chat interativo (TUI/CLI)</td></tr>
+          <tr><td><code>eva setup</code></td><td>Wizard de provider, modelo e basics</td></tr>
+          <tr><td><code>eva model</code></td><td>Troca/lista modelos</td></tr>
+          <tr><td><code>eva doctor</code></td><td>Diagnóstico do ambiente</td></tr>
+          <tr><td><code>eva tools</code></td><td>Quais toolsets estão ativos</td></tr>
+          <tr><td><code>eva skills</code></td><td>Lista / gerencia skills</td></tr>
+          <tr><td><code>eva gateway …</code></td><td>run / status / install do messaging</td></tr>
+          <tr><td><code>eva desk</code></td><td>Status da ponte desktop (stub/info)</td></tr>
+          <tr><td><code>eva -z "texto"</code></td><td>One-shot: pergunta e resposta sem sessão interativa</td></tr>
+          <tr><td><code>eva update</code></td><td>Atualiza instalação gerenciada (se aplicável)</td></tr>
+        </tbody>
+      </table>
+
+      <h3>5.2 Dentro do chat (slash)</h3>
+      <ul>
+        <li><code>/new</code> ou <code>/reset</code> — conversa nova</li>
+        <li><code>/model …</code> — troca modelo</li>
+        <li><code>/skills</code> — skills disponíveis</li>
+        <li><code>/compress</code> — comprime contexto longo</li>
+        <li><code>/usage</code> — uso de tokens</li>
+        <li><code>/stop</code> — interrompe trabalho em andamento (no gateway também)</li>
+      </ul>
+      <p>Muitos outros slash commands vêm de skills instaladas (aparecem como <code>/nome-da-skill</code>).</p>
+
+      <h3 id="skills">5.3 Skills e memória</h3>
+      <ul>
+        <li><strong>Skills</strong> = procedimentos reutilizáveis (SKILL.md). O agente pode criar/atualizar skills com a experiência.</li>
+        <li><strong>Memória</strong> = fatos curtos em MEMORY/USER + busca em sessões antigas (FTS5).</li>
+        <li>Pasta típica: sob <code>%LOCALAPPDATA%\eva</code> (memories, sessions, skills do perfil).</li>
+      </ul>
+      <div class="card">
+        Dica: depois de um workflow chato que deu certo, peça explicitamente:
+        <em>“Salva isso como skill para a próxima vez.”</em>
+      </div>
+
+      <h3 id="tools">5.4 Tools e permissões</h3>
+      <p>
+        O agente pode executar terminal, ler/escrever arquivos, buscar na web, browser, etc.
+        Comandos perigosos pedem aprovação (a menos que você rode em modo bem permissivo).
+      </p>
+      <ul>
+        <li>Revise toolsets: <code>eva tools</code></li>
+        <li>Para dev pesado em repositório, prefira combinar com o <strong>Grok TUI / pipeline EVA</strong> no cwd do projeto — o core não substitui o maestro multi-frente.</li>
+      </ul>
+
+      <!-- DESK -->
+      <h2 id="desk">6. EVA Desk (desktop Windows)</h2>
+      <p>
+        O Desk é a face “sempre no ar”: ícone na bandeja, hotkey de voz, painel de chat.
+        Ele não é um segundo Hermes — é a casca Windows que pode chamar o core.
+      </p>
+
+      <h3 id="tray">6.1 Subir o residente</h3>
+      <div class="step">
+        <div class="n">1</div>
+        <div class="body">
+          Duplo clique em:<br />
+          <code>C:\Users\mathe\Documents\evagent\Iniciar EVA Agent.bat</code><br />
+          (ou <code>scripts\launch_eva_agent.ps1</code> / <code>python -m eva_desk --resident</code>)
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">2</div>
+        <div class="body">
+          Procure o ícone <strong>EVA</strong> na bandeja do Windows.
+          Menu típico: Abrir painel · Ping core · Versão · Mutar · Sair.
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">3</div>
+        <div class="body">
+          Tooltip do tray deve mostrar algo como <code>EVA Agent · core ok</code> se o CLI <code>eva</code> estiver no PATH/venv.
+          Se estiver <code>core offline</code>, o core não foi encontrado — rode o bootstrap/PATH.
+        </div>
+      </div>
+
+      <h3 id="voz">6.2 Voz e PTT</h3>
+      <ul>
+        <li><strong>PTT (hold-to-talk):</strong> padrão <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd> (confirme no painel com <code>/ptt</code> se existir).</li>
+        <li>Segure → fale → solte → STT (Voicebox) → texto no chat → resposta → TTS <strong>Eva Humana</strong>.</li>
+        <li>Voicebox precisa estar instalado e saudável (API local, perfil Eva Humana).</li>
+        <li>Playback é interno — não deve abrir o Media Player do Windows.</li>
+      </ul>
+
+      <h3 id="brain">6.3 Cérebros no Desk e chat com o core</h3>
+      <table>
+        <thead>
+          <tr><th>Comando / config</th><th>Efeito</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>/brain grok</code></td><td>Default: Grok via ACP (tools de código no cwd)</td></tr>
+          <tr><td><code>/brain openai</code> / <code>claude</code></td><td>Chat HTTP (precisa de API key no ambiente)</td></tr>
+          <tr><td><code>/brain eva-core</code></td><td>One-shot via CLI <code>eva</code> (subprocess)</td></tr>
+          <tr><td><code>/ping</code></td><td>Testa se o binário <code>eva</code> responde</td></tr>
+          <tr><td><code>/modo seguro|obra|sistema</code></td><td>Níveis L1/L2/L3 de permissão de ações</td></tr>
+          <tr><td><code>/brief</code></td><td>Resumo de contexto (projeto, git, janela)</td></tr>
+          <tr><td><code>/help</code></td><td>Lista de comandos do Desk</td></tr>
+        </tbody>
+      </table>
+      <div class="card warn">
+        <strong>Importante:</strong> no Desk, <code>eva-core</code> é caminho de chat/ping.
+        O “agente Hermes completo” (tools ricas, skills, multi-step) continua sendo a CLI <code>eva</code> ou o Telegram via gateway.
+      </div>
+
+      <!-- TELEGRAM -->
+      <h2 id="telegram">7. Telegram (gateway)</h2>
+      <p>
+        Com o gateway ligado, você fala com a EVA de qualquer lugar — o mesmo agente do core,
+        com tools e sessão.
+      </p>
+
+      <h3 id="gateway">7.1 Ligar o gateway</h3>
+      <div class="step">
+        <div class="n">1</div>
+        <div class="body">
+          Crie o bot no <strong>@BotFather</strong> e copie o token.
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">2</div>
+        <div class="body">
+          Coloque no arquivo <code>%LOCALAPPDATA%\eva\.env</code>:
+<pre><code>TELEGRAM_BOT_TOKEN=123456:ABC-DEF...</code></pre>
+          <strong>Nunca</strong> commite esse arquivo no Git.
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">3</div>
+        <div class="body">
+          Instale a lib do Telegram no venv (se o doctor reclamar):
+<pre><code>cd C:\Users\mathe\Documents\eva-agent
+.\.venv\Scripts\python.exe -m pip install "python-telegram-bot>=21"</code></pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">4</div>
+        <div class="body">
+          Suba o gateway:
+<pre><code>powershell -NoProfile -ExecutionPolicy Bypass -File C:\Users\mathe\Documents\eva-agent\scripts\start-gateway.ps1</code></pre>
+          Parar:
+<pre><code>powershell -NoProfile -ExecutionPolicy Bypass -File C:\Users\mathe\Documents\eva-agent\scripts\stop-gateway.ps1</code></pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">5</div>
+        <div class="body">
+          Confira o log (prova real de que está vivo):
+<pre><code>Get-Content "$env:LOCALAPPDATA\eva\logs\gateway.log" -Tail 40 -Wait</code></pre>
+          Procure linhas como <code>telegram connected</code> e <code>Gateway running</code>.
+        </div>
+      </div>
+      <div class="card warn">
+        <code>eva gateway status</code> às vezes diz “not running” mesmo com o processo no ar.
+        Confie no <strong>log + processos</strong> se o bot estiver respondendo.
+      </div>
+
+      <h3 id="pairing">7.2 Primeira mensagem e segurança</h3>
+      <ol>
+        <li>Abra o bot no Telegram (ex.: o username que o <code>getMe</code> mostrou).</li>
+        <li>Mande “oi”.</li>
+        <li>Se pedir <strong>pairing</strong> / aprovação, use os comandos de pairing da CLI
+          (<code>eva pairing …</code> (list / approve) conforme a mensagem do bot.</li>
+        <li>Opcional: restrinja usuários com <code>TELEGRAM_ALLOWED_USERS</code> no <code>.env</code>
+          (IDs numéricos). Ver <code>docs\gateway.env.example</code> e <code>docs\gateway-windows.md</code>.</li>
+      </ol>
+      <div class="card danger">
+        <strong>Segurança:</strong> se o token vazar em chat/screenshot, revogue no BotFather (<code>/revoke</code>)
+        e atualize o <code>.env</code>. Trate o token como senha.
+      </div>
+
+      <!-- DIA A DIA -->
+      <h2 id="diaadia">8. Dia a dia</h2>
+
+      <h3 id="fluxos">8.1 Fluxos recomendados</h3>
+      <table>
+        <thead>
+          <tr><th>Situação</th><th>Use</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Pergunta rápida no celular</td>
+            <td>Telegram (gateway ligado no PC)</td>
+          </tr>
+          <tr>
+            <td>Tarefa com tools, código, multi-passo</td>
+            <td>CLI <code>eva</code> no projeto certo (<code>cd</code> antes)</td>
+          </tr>
+          <tr>
+            <td>Mãos no teclado + voz no PC</td>
+            <td>Desk + PTT; brain Grok ou eva-core</td>
+          </tr>
+          <tr>
+            <td>Engenharia multi-frente / PRs / pipeline</td>
+            <td>Grok TUI + maestro EVA (não o gateway)</td>
+          </tr>
+          <tr>
+            <td>Automação diária</td>
+            <td>Cron do core (<code>eva cron</code> / skills de schedule)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>8.2 Atualizar o core</h3>
+<pre><code>cd C:\Users\mathe\Documents\eva-agent
+git pull origin main
+.\.venv\Scripts\Activate.ps1
+pip install -e ".[cli]"
+# se mudou deps de Telegram:
+pip install "python-telegram-bot>=21"
+# reinicie o gateway se estiver rodando</code></pre>
+
+      <h3>8.3 Onde olhar quando algo quebra</h3>
+      <ul>
+        <li>Logs core/gateway: <code>%LOCALAPPDATA%\eva\logs\</code></li>
+        <li>Config Desk: <code>%APPDATA%\EvaDesk\config.json</code> (nome legado da pasta)</li>
+        <li>Docs no repo: <code>docs\install-windows.md</code>, <code>docs\gateway-windows.md</code>, <code>docs\DESKTOP-SHELL.md</code>, <code>docs\EVA-PARITY.md</code></li>
+      </ul>
+
+      <h2 id="problemas">9. Problemas comuns</h2>
+      <table>
+        <thead>
+          <tr><th>Sintoma</th><th>O que fazer</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>eva</code> não é reconhecido</td>
+            <td>Ative o venv ou rode <code>install-user-path.ps1</code> e abra terminal novo</td>
+          </tr>
+          <tr>
+            <td>Tray “core offline”</td>
+            <td>Instale/PATH do <code>eva</code>; menu Ping; confira <code>where.exe eva</code></td>
+          </tr>
+          <tr>
+            <td>Sem voz no Desk</td>
+            <td>Voicebox aberto/saudável; perfil Eva Humana; <code>/voice</code> no Desk</td>
+          </tr>
+          <tr>
+            <td>Gateway status “not running”</td>
+            <td>Olhe <code>gateway.log</code> e Task Manager por <code>eva.exe</code> / python gateway</td>
+          </tr>
+          <tr>
+            <td>Telegram não conecta</td>
+            <td>Token no <code>.env</code>; pip <code>python-telegram-bot</code>; firewall; log</td>
+          </tr>
+          <tr>
+            <td>Bot não responde à sua msg</td>
+            <td>Pairing / allowlist de user IDs; reinicie gateway</td>
+          </tr>
+          <tr>
+            <td>Modelo recusa / 401</td>
+            <td><code>eva setup</code> / keys no <code>.env</code>; <code>eva doctor</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="checklist">10. Checklist “EVA 100% no ar”</h2>
+      <div class="card ok">
+        <ol>
+          <li>☐ <code>bootstrap_dev.ps1</code> ou install PATH ok</li>
+          <li>☐ <code>eva --help</code> funciona</li>
+          <li>☐ <code>eva setup</code> com provider e key</li>
+          <li>☐ Chat no terminal: pergunta simples ok</li>
+          <li>☐ Desk na bandeja; Ping core ok</li>
+          <li>☐ PTT + voz Eva Humana (se Voicebox ok)</li>
+          <li>☐ <code>TELEGRAM_BOT_TOKEN</code> no <code>.env</code></li>
+          <li>☐ <code>start-gateway.ps1</code>; log com <code>telegram connected</code></li>
+          <li>☐ Mensagem real no bot responde</li>
+          <li>☐ Você sabe onde estão logs e como parar o gateway</li>
+        </ol>
+      </div>
+
+      <h2>Referência rápida de caminhos</h2>
+<pre><code>Core repo     C:\Users\mathe\Documents\eva-agent
+Desk repo     C:\Users\mathe\Documents\evagent
+Home dados    %LOCALAPPDATA%\eva
+  .env        secrets (Telegram, APIs)
+  logs\       gateway.log, agent.log, errors.log
+  sessions\   conversas
+Config Desk   %APPDATA%\EvaDesk\config.json
+
+Scripts úteis
+  scripts\bootstrap_dev.ps1
+  scripts\install-user-path.ps1
+  scripts\start-gateway.ps1
+  scripts\stop-gateway.ps1
+  scripts\smoke_eva_windows.ps1
+  Iniciar EVA Agent.bat</code></pre>
+
+      <footer>
+        Tutorial EVA Agent · gerado para o ambiente Matheus · Windows ·
+        Não inclui secrets. Versão do doc alinhada ao estado pós ondas 1–3 (fork Hermes + Desk bridge).
+        Abra este arquivo no navegador: <code>docs\tutorial-eva-completo.html</code>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>
