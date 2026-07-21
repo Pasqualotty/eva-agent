@@ -192,9 +192,12 @@ function Invoke-PythonSnippet {
 
 # --- Banner ----------------------------------------------------------------
 if (-not $Json) {
+    $evaHomeBanner = if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA "eva" } else { "(LOCALAPPDATA unset)" }
     Write-Host ""
     Write-Host "EVA Agent Windows smoke" -ForegroundColor Cyan
     Write-Host ("  repo:     {0}" -f $repoRoot)
+    Write-Host ("  package:  eva-agent")
+    Write-Host ("  home:     {0}" -f $evaHomeBanner)
     Write-Host ("  host:     {0}" -f $env:COMPUTERNAME)
     Write-Host ("  ps:       {0}" -f $PSVersionTable.PSVersion.ToString())
     Write-Host ("  strict:   {0}" -f [bool]$Strict)
@@ -214,16 +217,19 @@ if ($psMajor -gt 5 -or ($psMajor -eq 5 -and $psMinor -ge 1)) {
     Add-Result -Status "FAIL" -Name "powershell_version" -Detail ("need 5.1+, got {0}.{1}" -f $psMajor, $psMinor) -Required
 }
 
-# 2) Repo layout markers
+# 2) Repo layout markers (rebrand: eva launcher + gateway module required)
 $requiredPaths = @(
     "pyproject.toml",
     "hermes_constants.py",
     "toolsets.py",
     "hermes_cli\main.py",
+    "eva",
     "hermes",
     "LICENSE",
     "skills",
-    "tools"
+    "tools",
+    "gateway\__init__.py",
+    "gateway\run.py"
 )
 $missing = @()
 foreach ($rel in $requiredPaths) {
@@ -232,7 +238,7 @@ foreach ($rel in $requiredPaths) {
     }
 }
 if ($missing.Count -eq 0) {
-    Add-Result -Status "PASS" -Name "repo_layout" -Detail ("{0} markers present" -f $requiredPaths.Count) -Required
+    Add-Result -Status "PASS" -Name "repo_layout" -Detail ("{0} markers present (eva+gateway+skills+toolsets)" -f $requiredPaths.Count) -Required
 } else {
     Add-Result -Status "FAIL" -Name "repo_layout" -Detail ("missing: {0}" -f ($missing -join ", ")) -Required
 }
@@ -265,13 +271,14 @@ sys.exit(0 if ok else 1)
     Add-Result -Status "SKIP" -Name "python_version" -Detail "no python" -Required
 }
 
-# 5) pyproject.toml sanity (name + scripts entry points)
+# 5) pyproject.toml sanity (package name eva-agent + eva primary entry)
 if ($pythonExe -and (Test-Path -LiteralPath (Join-Path $repoRoot "pyproject.toml"))) {
     $ppCheck = Invoke-PythonSnippet -PythonExe $pythonExe -Code @"
 import sys
 from pathlib import Path
 root = Path(r'''$repoRoot''')
 text = (root / 'pyproject.toml').read_text(encoding='utf-8')
+expected_name = 'eva-agent'
 try:
     try:
         import tomllib
@@ -279,23 +286,27 @@ try:
         import tomli as tomllib  # type: ignore
     data = tomllib.loads(text)
 except Exception as e:
-    # Minimal fallback without tomllib/tomli: regex-ish presence checks
+    # Minimal fallback without tomllib/tomli: regex presence checks
     import re
     name_m = re.search(r'(?m)^name\s*=\s*"([^"]+)"', text)
-    scripts_ok = 'hermes' in text and 'hermes_cli.main' in text
+    eva_ok = bool(re.search(r'(?m)^eva\s*=\s*"hermes_cli\.main:main"', text))
     if not name_m:
         print('parse_error: %s' % e)
         sys.exit(1)
-    print('name=%s scripts=%s (fallback-parser)' % (name_m.group(1), scripts_ok))
-    sys.exit(0 if scripts_ok else 1)
+    name = name_m.group(1)
+    ok = (name == expected_name) and eva_ok
+    print('name=%s eva_entry=%s (fallback-parser)' % (name, eva_ok))
+    sys.exit(0 if ok else 1)
 else:
     proj = data.get('project') or {}
     name = proj.get('name') or ''
     scripts = proj.get('scripts') or {}
-    has_hermes = 'hermes' in scripts
-    entry = scripts.get('hermes', '')
-    ok = bool(name) and has_hermes and 'hermes_cli' in entry
-    print('name=%s hermes_entry=%s' % (name, entry))
+    eva_entry = scripts.get('eva', '')
+    hermes_entry = scripts.get('hermes', '')
+    ok = (name == expected_name) and bool(eva_entry) and ('hermes_cli' in eva_entry)
+    print('name=%s eva_entry=%s hermes_alias=%s' % (name, eva_entry, hermes_entry or '(none)'))
+    if name != expected_name:
+        print('expected package name %s' % expected_name)
     sys.exit(0 if ok else 1)
 "@
     if ($ppCheck.ExitCode -eq 0) {
@@ -307,17 +318,47 @@ else:
     Add-Result -Status "SKIP" -Name "pyproject_ok" -Detail "no python or pyproject.toml" -Required
 }
 
-# 6) hermes_constants import (stdlib-only module)
+# 6) hermes_constants import + Windows home = %LOCALAPPDATA%\eva
 if ($pythonExe) {
     $hc = Invoke-PythonSnippet -PythonExe $pythonExe -Code @"
 import sys, os
+from pathlib import Path
 sys.path.insert(0, r'''$repoRoot''')
+# Clear overrides so smoke measures the platform default, not the caller's env.
+for k in ('EVA_HOME', 'HERMES_HOME'):
+    os.environ.pop(k, None)
 import hermes_constants
+# Reset any sticky override from prior imports in this process
+if hasattr(hermes_constants, 'reset_hermes_home_override'):
+    try:
+        hermes_constants.reset_hermes_home_override()
+    except Exception:
+        pass
+if hasattr(hermes_constants, 'reset_eva_home_override'):
+    try:
+        hermes_constants.reset_eva_home_override()
+    except Exception:
+        pass
 home = hermes_constants.get_hermes_home()
-print(str(home))
-# Windows EVA target home is %LOCALAPPDATA%\eva (rebrand); Hermes default is hermes.
-# Smoke only asserts the resolver returns a Path under a real base.
+print('home=%s' % home)
 assert home is not None
+assert hasattr(hermes_constants, 'get_eva_home'), 'missing get_eva_home alias'
+if sys.platform == 'win32':
+    local = os.environ.get('LOCALAPPDATA', '').strip()
+    if local:
+        expected = Path(local) / 'eva'
+    else:
+        expected = Path.home() / 'AppData' / 'Local' / 'eva'
+    # Compare resolved paths case-insensitively on Windows
+    home_r = Path(home).resolve()
+    exp_r = expected.resolve()
+    if home_r != exp_r:
+        print('expected_default=%s' % exp_r)
+        sys.exit(1)
+    print('windows_default_home=LOCALAPPDATA\\\\eva')
+else:
+    # Non-Windows smoke hosts: default is ~/.eva
+    print('posix_default_home=~/.eva shape=%s' % home)
 print('ok')
 "@
     if ($hc.ExitCode -eq 0) {
@@ -329,27 +370,58 @@ print('ok')
     Add-Result -Status "SKIP" -Name "import_hermes_constants" -Detail "no python" -Required
 }
 
-# 7) toolsets list without API keys
+# 6b) Explicit EVA Windows home contract (banner-friendly duplicate of above detail)
+if ($pythonExe -and $env:LOCALAPPDATA) {
+    $expectedEvaHome = Join-Path $env:LOCALAPPDATA "eva"
+    $homeCheck = Invoke-PythonSnippet -PythonExe $pythonExe -Code @"
+import sys, os
+from pathlib import Path
+sys.path.insert(0, r'''$repoRoot''')
+for k in ('EVA_HOME', 'HERMES_HOME'):
+    os.environ.pop(k, None)
+import hermes_constants
+if hasattr(hermes_constants, 'reset_hermes_home_override'):
+    try: hermes_constants.reset_hermes_home_override()
+    except Exception: pass
+home = Path(hermes_constants.get_hermes_home()).resolve()
+exp = Path(r'''$expectedEvaHome''').resolve()
+print(str(home))
+sys.exit(0 if home == exp else 1)
+"@
+    if ($homeCheck.ExitCode -eq 0) {
+        Add-Result -Status "PASS" -Name "eva_windows_home" -Detail ("%LOCALAPPDATA%\eva -> $($homeCheck.Output)") -Required
+    } else {
+        Add-Result -Status "FAIL" -Name "eva_windows_home" -Detail ("expected $expectedEvaHome got $($homeCheck.Output)") -Required
+    }
+} elseif (-not $env:LOCALAPPDATA) {
+    Add-Result -Status "SKIP" -Name "eva_windows_home" -Detail "LOCALAPPDATA unset (non-Windows host?)" -Required
+} else {
+    Add-Result -Status "SKIP" -Name "eva_windows_home" -Detail "no python" -Required
+}
+
+# 7) toolsets list without API keys (presence + core names)
 if ($pythonExe) {
     $ts = Invoke-PythonSnippet -PythonExe $pythonExe -Code @"
 import sys
 sys.path.insert(0, r'''$repoRoot''')
 from toolsets import TOOLSETS, get_all_toolsets
 keys = sorted(TOOLSETS.keys())
-# Prefer public helper if present
 try:
     all_ts = get_all_toolsets()
     n = len(all_ts)
 except Exception:
     n = len(keys)
-assert n >= 5, 'expected several toolsets, got %d' % n
-# Sample a few core names that should always exist
-core_expected = ['web', 'terminal', 'file', 'browser']
+assert n >= 10, 'expected many toolsets, got %d' % n
+# Core toolsets + gateway bundle (no API keys needed to list names)
+core_expected = ['web', 'terminal', 'file', 'browser', 'hermes-gateway']
 missing = [k for k in core_expected if k not in TOOLSETS]
 print('count=%d sample=%s' % (n, ','.join(keys[:8])))
 if missing:
     print('missing_core=%s' % ','.join(missing))
     sys.exit(1)
+gw_related = [k for k in keys if 'gateway' in k or k.startswith('hermes-')]
+print('gateway_related=%d' % len(gw_related))
+assert len(gw_related) >= 1, 'no gateway-related toolsets'
 print('ok')
 "@
     if ($ts.ExitCode -eq 0) {
@@ -363,10 +435,19 @@ print('ok')
 
 # 8) skills directory has bundled skills (no network)
 $skillsDir = Join-Path $repoRoot "skills"
+$optionalSkillsDir = Join-Path $repoRoot "optional-skills"
 if (Test-Path -LiteralPath $skillsDir) {
     $skillFiles = @(Get-ChildItem -LiteralPath $skillsDir -Recurse -Filter "SKILL.md" -ErrorAction SilentlyContinue)
-    if ($skillFiles.Count -gt 0) {
-        Add-Result -Status "PASS" -Name "skills_bundled" -Detail ("{0} SKILL.md under skills/" -f $skillFiles.Count) -Required
+    $optCount = 0
+    if (Test-Path -LiteralPath $optionalSkillsDir) {
+        $optCount = @(Get-ChildItem -LiteralPath $optionalSkillsDir -Recurse -Filter "SKILL.md" -ErrorAction SilentlyContinue).Count
+    }
+    if ($skillFiles.Count -ge 1) {
+        $detail = ("{0} SKILL.md under skills/" -f $skillFiles.Count)
+        if ($optCount -gt 0) {
+            $detail = ("{0}; {1} under optional-skills/" -f $detail, $optCount)
+        }
+        Add-Result -Status "PASS" -Name "skills_bundled" -Detail $detail -Required
     } else {
         Add-Result -Status "FAIL" -Name "skills_bundled" -Detail "no SKILL.md under skills/" -Required
     }
@@ -374,6 +455,59 @@ if (Test-Path -LiteralPath $skillsDir) {
     Add-Result -Status "FAIL" -Name "skills_bundled" -Detail "skills/ missing" -Required
 }
 
+# 8b) gateway module presence (files only - full import needs PyYAML/deps)
+# find_spec('gateway') executes gateway/__init__.py which pulls hermes_cli.config
+# -> yaml; smoke must not require installed deps. Presence = package tree OK.
+$gatewayRequiredFiles = @(
+    "gateway\__init__.py",
+    "gateway\run.py",
+    "gateway\session.py",
+    "gateway\config.py",
+    "gateway\platforms"
+)
+$gwMissing = @()
+foreach ($rel in $gatewayRequiredFiles) {
+    if (-not (Test-Path -LiteralPath (Join-Path $repoRoot $rel))) {
+        $gwMissing += $rel
+    }
+}
+$platformPyCount = 0
+$platformsDir = Join-Path $repoRoot "gateway\platforms"
+if (Test-Path -LiteralPath $platformsDir) {
+    $platformPyCount = @(Get-ChildItem -LiteralPath $platformsDir -Filter "*.py" -File -ErrorAction SilentlyContinue).Count
+}
+if ($gwMissing.Count -eq 0 -and $platformPyCount -ge 1) {
+    Add-Result -Status "PASS" -Name "gateway_module" -Detail ("package tree ok; platforms/*.py={0}" -f $platformPyCount) -Required
+} elseif ($gwMissing.Count -gt 0) {
+    Add-Result -Status "FAIL" -Name "gateway_module" -Detail ("missing: {0}" -f ($gwMissing -join ", ")) -Required
+} else {
+    Add-Result -Status "FAIL" -Name "gateway_module" -Detail "gateway/platforms has no .py files" -Required
+}
+
+# Optional: import probe (SKIP when third-party deps missing - no API keys / no install)
+if ($pythonExe -and $gwMissing.Count -eq 0) {
+    $gwImp = Invoke-PythonSnippet -PythonExe $pythonExe -Code @"
+import sys
+sys.path.insert(0, r'''$repoRoot''')
+try:
+    import gateway  # noqa: F401
+    print('import=ok')
+    sys.exit(0)
+except ModuleNotFoundError as e:
+    print('import=deps_missing:%s' % getattr(e, 'name', e))
+    sys.exit(2)
+except Exception as e:
+    print('import=error:%s' % e)
+    sys.exit(1)
+"@
+    if ($gwImp.ExitCode -eq 0) {
+        Add-Result -Status "PASS" -Name "gateway_import" -Detail $gwImp.Output
+    } else {
+        Add-Result -Status "SKIP" -Name "gateway_import" -Detail $gwImp.Output
+    }
+} else {
+    Add-Result -Status "SKIP" -Name "gateway_import" -Detail "gateway tree incomplete or no python"
+}
 # 9) uv present? (optional - skip if absent)
 $uv = Get-Command "uv" -ErrorAction SilentlyContinue
 if ($uv) {
@@ -456,52 +590,92 @@ if ($hermesHelpOk) {
     Add-Result -Status "SKIP" -Name "hermes_cli_help" -Detail $(if ($hermesDetail) { $hermesDetail } else { "hermes CLI not runnable without install" })
 }
 
-# 12) eva CLI --help (rebrand entry - may not exist yet on this branch)
+# 12) eva CLI --help (required attempt when bootstrap/launcher exists; no API keys)
 $evaCmd = Get-Command "eva" -ErrorAction SilentlyContinue
 $evaLauncher = Join-Path $repoRoot "eva"
-if ($evaCmd) {
+$bootstrapInstaller = Join-Path $repoRoot "apps\bootstrap-installer"
+$evaHelpOk = $false
+$evaDetail = ""
+$evaBootstrapPresent = (Test-Path -LiteralPath $evaLauncher) -or ($null -ne $evaCmd) -or (Test-Path -LiteralPath $bootstrapInstaller)
+
+if ($evaCmd -and $evaCmd.Source) {
     try {
-        $evaHelp = & eva --help 2>&1 | Out-String
-        if ($LASTEXITCODE -eq 0 -or $evaHelp -match 'Usage|usage|doctor|Commands|EVA|Hermes') {
-            Add-Result -Status "PASS" -Name "eva_cli_help" -Detail "installed: $($evaCmd.Source)"
+        $evaPrevEap = $ErrorActionPreference
+        $ErrorActionPreference = "SilentlyContinue"
+        $evaHelp = (& eva --help 2>&1 | ForEach-Object { "$_" }) -join "`n"
+        $evaCode = $LASTEXITCODE
+        $ErrorActionPreference = $evaPrevEap
+        if ($evaCode -eq 0 -or $evaHelp -match 'Usage|usage|doctor|Commands|EVA|Hermes|eva') {
+            $evaHelpOk = $true
+            $evaDetail = "installed: $($evaCmd.Source)"
         } else {
-            Add-Result -Status "SKIP" -Name "eva_cli_help" -Detail "eva on PATH but --help did not look healthy"
+            $evaDetail = "eva on PATH but --help exit=$evaCode"
         }
     } catch {
-        Add-Result -Status "SKIP" -Name "eva_cli_help" -Detail $_.Exception.Message
+        $evaDetail = "eva --help error: $($_.Exception.Message)"
     }
-} elseif (Test-Path -LiteralPath $evaLauncher) {
-    if ($cliPython) {
-        try {
-            $evaHelp = & $cliPython $evaLauncher --help 2>&1 | Out-String
-            if ($LASTEXITCODE -eq 0 -or $evaHelp -match 'Usage|usage|doctor|Commands|EVA|Hermes') {
-                Add-Result -Status "PASS" -Name "eva_cli_help" -Detail "repo launcher via $cliPython"
-            } else {
-                Add-Result -Status "SKIP" -Name "eva_cli_help" -Detail "repo eva launcher present but --help failed (deps?)"
-            }
-        } catch {
-            Add-Result -Status "SKIP" -Name "eva_cli_help" -Detail $_.Exception.Message
-        }
-    } else {
-        Add-Result -Status "SKIP" -Name "eva_cli_help" -Detail "eva launcher present, no python"
-    }
-} else {
-    Add-Result -Status "SKIP" -Name "eva_cli_help" -Detail "eva CLI not installed yet (rebrand pending - ok)"
 }
 
-# 13) doctor (if CLI works)
-if ($hermesHelpOk -and $cliPython) {
+if (-not $evaHelpOk -and (Test-Path -LiteralPath $evaLauncher) -and $cliPython) {
+    try {
+        $evaPrevEap = $ErrorActionPreference
+        $ErrorActionPreference = "SilentlyContinue"
+        $evaRaw = & $cliPython $evaLauncher --help 2>&1
+        $evaCode = $LASTEXITCODE
+        $ErrorActionPreference = $evaPrevEap
+        $evaHelp = ($evaRaw | ForEach-Object { "$_" }) -join "`n"
+        if ($evaCode -eq 0 -or $evaHelp -match 'Usage|usage|doctor|Commands|EVA|Hermes|eva') {
+            $evaHelpOk = $true
+            $evaDetail = "repo launcher via $cliPython"
+        } else {
+            $errLine = ($evaHelp -split "`n" | Where-Object { $_ -match "Error|ModuleNotFound|Traceback|ImportError" } | Select-Object -First 1)
+            if (-not $errLine) { $errLine = ($evaHelp.Trim() -split "`n" | Select-Object -Last 1) }
+            $evaDetail = "repo eva launcher failed (deps?): $errLine"
+        }
+    } catch {
+        $evaDetail = "repo launcher error: $($_.Exception.Message)"
+    }
+}
+
+if ($evaHelpOk) {
+    Add-Result -Status "PASS" -Name "eva_cli_help" -Detail $evaDetail
+} elseif ($evaBootstrapPresent) {
+    # Launcher/bootstrap exists: still not required to pass without installed deps
+    if (-not $evaDetail) {
+        if (-not $cliPython) {
+            $evaDetail = "eva bootstrap present, no python for --help"
+        } else {
+            $evaDetail = "eva bootstrap present but --help not runnable (deps?)"
+        }
+    }
+    Add-Result -Status "SKIP" -Name "eva_cli_help" -Detail $evaDetail
+} else {
+    Add-Result -Status "SKIP" -Name "eva_cli_help" -Detail "eva CLI / bootstrap not present"
+}
+
+# 13) doctor (prefer eva CLI; no API keys; may non-zero if config incomplete)
+$cliHelpOk = $evaHelpOk -or $hermesHelpOk
+if ($cliHelpOk -and $cliPython) {
     $doctorOk = $false
     $doctorDetail = ""
-    $launcher = Join-Path $repoRoot "hermes"
     try {
-        if ((Get-Command "hermes" -ErrorAction SilentlyContinue) -and $hermesDetail -like "installed:*") {
-            $docOut = & hermes doctor 2>&1 | Out-String
+        $docPrevEap = $ErrorActionPreference
+        $ErrorActionPreference = "SilentlyContinue"
+        if ($evaHelpOk -and $evaDetail -like "installed:*") {
+            $docOut = (& eva doctor 2>&1 | ForEach-Object { "$_" }) -join "`n"
+            $docCode = $LASTEXITCODE
+        } elseif ($evaHelpOk -and (Test-Path -LiteralPath $evaLauncher)) {
+            $docOut = (& $cliPython $evaLauncher doctor 2>&1 | ForEach-Object { "$_" }) -join "`n"
+            $docCode = $LASTEXITCODE
+        } elseif ($hermesHelpOk -and $hermesDetail -like "installed:*") {
+            $docOut = (& hermes doctor 2>&1 | ForEach-Object { "$_" }) -join "`n"
             $docCode = $LASTEXITCODE
         } else {
-            $docOut = & $cliPython $launcher doctor 2>&1 | Out-String
+            $hermesLauncher = Join-Path $repoRoot "hermes"
+            $docOut = (& $cliPython $hermesLauncher doctor 2>&1 | ForEach-Object { "$_" }) -join "`n"
             $docCode = $LASTEXITCODE
         }
+        $ErrorActionPreference = $docPrevEap
         # doctor may return non-zero when config incomplete - still "ran"
         if ($docOut -match 'doctor|Doctor|Python|config|Config|OK|PASS|FAIL|check') {
             $doctorOk = $true
@@ -513,12 +687,12 @@ if ($hermesHelpOk -and $cliPython) {
         $doctorDetail = $_.Exception.Message
     }
     if ($doctorOk) {
-        Add-Result -Status "PASS" -Name "hermes_doctor" -Detail $doctorDetail
+        Add-Result -Status "PASS" -Name "eva_doctor" -Detail $doctorDetail
     } else {
-        Add-Result -Status "SKIP" -Name "hermes_doctor" -Detail $doctorDetail
+        Add-Result -Status "SKIP" -Name "eva_doctor" -Detail $doctorDetail
     }
 } else {
-    Add-Result -Status "SKIP" -Name "hermes_doctor" -Detail "CLI not runnable; skip doctor"
+    Add-Result -Status "SKIP" -Name "eva_doctor" -Detail "CLI not runnable; skip doctor"
 }
 
 # 14) Windows footgun checker (optional, no network)
