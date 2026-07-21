@@ -2272,21 +2272,28 @@ function Set-PathVariable {
         Write-Info "PATH already configured"
     }
     
-    # Set HERMES_HOME so the Python code finds config/data in the right place.
-    # Only needed on Windows where we install to %LOCALAPPDATA%\eva instead
-    # of the Unix default ~/.hermes
+    # Set EVA_HOME + HERMES_HOME so the Python code finds config/data in the
+    # right place. Product home is %LOCALAPPDATA%\eva; HERMES_HOME remains the
+    # engine compat alias (hermes_constants resolves EVA_HOME first).
+    $currentEvaHome = [Environment]::GetEnvironmentVariable("EVA_HOME", "User")
+    if (-not $currentEvaHome -or $currentEvaHome -ne $HermesHome) {
+        [Environment]::SetEnvironmentVariable("EVA_HOME", $HermesHome, "User")
+        Write-Success "Set EVA_HOME=$HermesHome"
+    }
     $currentHermesHome = [Environment]::GetEnvironmentVariable("HERMES_HOME", "User")
     if (-not $currentHermesHome -or $currentHermesHome -ne $HermesHome) {
         [Environment]::SetEnvironmentVariable("HERMES_HOME", $HermesHome, "User")
         Write-Success "Set HERMES_HOME=$HermesHome"
     }
+    $env:EVA_HOME = $HermesHome
     $env:HERMES_HOME = $HermesHome
-    
+
     # Update current session
     $env:Path = "$hermesBin;$env:Path"
 
-    # Product CLI is `eva`. Until pyproject ships an eva entry point, create a
-    # user-scoped shim next to hermes.exe so `eva` works on PATH immediately.
+    # Product CLI is `eva` (pyproject scripts entry). If only hermes.exe landed
+    # in the venv Scripts dir (older wheels / partial install), write a
+    # user-scoped shim so `eva` works on PATH immediately.
     $evaExe = Join-Path $hermesBin "eva.exe"
     $hermesExe = Join-Path $hermesBin "hermes.exe"
     if (-not (Test-Path $evaExe) -and (Test-Path $hermesExe)) {
